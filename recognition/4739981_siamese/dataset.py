@@ -5,11 +5,10 @@ import os, random
 from typing import Self
 import pandas as pd
 from PIL import Image
-from matplotlib import pyplot as plt
 import numpy as np
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 PERCENTAGE_OF_DATA_TO_LOAD = 1
@@ -41,7 +40,6 @@ class ISICImageDataset(Dataset):
             image_names[i] = image_name.replace(".jpeg", "")
 
         self._images_data = torch.stack(image_tensors, dim=0)
-        print(self._images_data.shape)
 
         # get the labels data.
         labels_df = pd.read_csv(labels_path)
@@ -91,4 +89,5 @@ class ISICImageDataset(Dataset):
 
         return train_dataset, test_dataset
 
-
+    def to_DataLoader(self, **kwargs) -> DataLoader:
+        return DataLoader(self, **kwargs)
