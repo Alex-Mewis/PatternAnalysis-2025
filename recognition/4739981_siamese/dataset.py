@@ -25,7 +25,7 @@ class ISICImageDataset(Dataset):
 
         if shortcut_images is not None and shortcut_labels is not None:
             self._len = len(shortcut_labels)
-            self._iamges_data = shortcut_images
+            self._images_data = shortcut_images
             self._labels = shortcut_labels
             return None
 
@@ -53,12 +53,24 @@ class ISICImageDataset(Dataset):
     def __len__(self) -> int:
         return self._len
     
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
-        if (idx < 0 or idx >= self._len):
+    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int]:
+        if (i < 0 or i >= self._len):
             raise IndexError
-        image = self._images_data[idx]
-        label = self._labels[idx]
-        return image, label
+        
+        image = self._images_data[i]
+        label = self._labels[i]
+
+        # need to find a matching image to pair up with.
+        # this matching image needs to be found at random.
+        found_pair = False
+        while not found_pair:
+            pair_i = random.randint(0, self._len-1)
+            if pair_i == i: continue
+            pair_label = self._labels[pair_i]
+            found_pair = pair_label == label
+
+        pair_image = self._images_data[pair_i]
+        return image, pair_image, label
 
     def shuffle(self) -> None:
         """
