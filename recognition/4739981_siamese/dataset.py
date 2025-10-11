@@ -3,6 +3,7 @@ Contains the data loader for loading and preprocesing the data.
 """
 import os, random
 from typing import Self
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 from PIL import Image
 import numpy as np
@@ -11,10 +12,15 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-PERCENTAGE_OF_DATA_TO_LOAD = 1
+PERCENTAGE_OF_DATA_TO_LOAD = 0.1 
+THREADS_USE = 4 
 
 to_tesnor_transform = transforms.ToTensor()
 
+def load_image_data(args: list) -> None:
+    image_path, image_tensors, i = args
+    image = Image.open(image_path)
+    image_tensors[i] =  to_tesnor_transform(image)
 
 class ISICImageDataset(Dataset):
     """
@@ -33,12 +39,16 @@ class ISICImageDataset(Dataset):
         self._len = int(len(os.listdir(image_dir)) * PERCENTAGE_OF_DATA_TO_LOAD)
         image_tensors = [None] * self._len 
         image_names = [None] * self._len
+        image_args = [None] * self._len
         for i, image_name in enumerate(os.listdir(image_dir)):
             if i >= self._len: break
-            image = Image.open(os.path.join(image_dir, image_name))
-            image_tensors[i] =  to_tesnor_transform(image)
-            image_names[i] = image_name.replace(".jpeg", "")
+            image_names[i] = image_name.replace('.jpg', '')
+            image_args[i] = [os.path.join(image_dir, image_name), image_tensors, i]
 
+        with ThreadPoolExecutor(max_workers=THREADS_USE) as thread_excecuter:
+            for args in image_args:
+                thread_excecuter.submit(load_image_data, args)
+        
         self._images_data = torch.stack(image_tensors, dim=0)
 
         # get the labels data.
