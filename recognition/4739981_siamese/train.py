@@ -1,7 +1,8 @@
 """
 contains code for traning, validating, testing and saving the model.
 """
-import time
+import os, time
+from datetime import datetime
 
 import torch
 from torch import nn
@@ -12,12 +13,16 @@ from modules import SiameseNetwork
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+this_dir = os.path.dirname(os.path.abspath(__file__))
+models_dir = os.path.join(this_dir, "models")
+if not os.path.exists(models_dir): os.mkdir(models_dir)
 
 
 #### HYPERPARAMETERS ##############################################################
 LEARNING_RATE = 1e-3
-NUM_EPOCHS = 3
+NUM_EPOCHS = 2 
 
+#### LOSS #########################################################################
 # TAKEN FROM: https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
 class ContrastiveLoss(nn.Module):
    
@@ -35,7 +40,38 @@ class ContrastiveLoss(nn.Module):
 
         return loss_contrastive
 
+#### MODEL FUNCTIONS #############################################################
+def save_model(model: SiameseNetwork, outdir: str | None = None) -> None:
+    if outdir is None: outdir = models_dir
+    filename = f"siamese_{datetime.now().timestamp()}.params"
+    outpath = os.path.join(outdir, filename)
+    print(f"Saving model to: {outpath}")
+    torch.save(model.state_dict(), outpath)
+    return None
+ 
+def load_model(model_path: str | None = None) -> SiameseNetwork:
+    model = SiameseNetwork()
 
+    if model_path is not None:
+        print(f"Loading model from: {model_path}")
+        state_dict = torch.load(model_path)
+        model.load_state_dict(state_dict) 
+        return model
+    
+    latest_model_datetime = None
+    latest_model_path = None
+    for model_filename in os.listdir(models_dir):
+        model_timestamp = float(model_filename.replace('.params', '').replace('siamese_', ''))
+        model_datetime = datetime.fromtimestamp(model_timestamp)
+        if latest_model_path is None or model_datetime > latest_model_datetime:
+            latest_model_datetime = model_datetime
+            latest_model_path = os.path.join(models_dir, model_filename)
+
+    print(f"Loading model from: {latest_model_path}") 
+    state_dict = torch.load(latest_model_path)
+    model.load_state_dict(state_dict)
+
+    return model
 
 def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
     
@@ -66,4 +102,7 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
 
     print("#### FINISHED TRANING #############################################################")    
     elapsed_time = time.time() - start_time
-    print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins") 
+    print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
+
+    return None
+
