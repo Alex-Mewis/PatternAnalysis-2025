@@ -11,17 +11,19 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
 from modules import SiameseNetwork, Classifier
+from configs import siamese_config, classifier_config
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 this_dir = os.path.dirname(os.path.abspath(__file__))
 models_dir = os.path.join(this_dir, "models")
+siamese_models_dir = os.path.join(models_dir, 'siamese')
+classifier_models_dir = os.path.join(models_dir, 'classifier')
+
 if not os.path.exists(models_dir): os.mkdir(models_dir)
+if not os.path.exists(siamese_models_dir): os.mkdir(siamese_models_dir)
+if not os.path.exists(classifier_models_dir): os.mkdir(classifier_models_dir)
 
-
-#### HYPERPARAMETERS ##############################################################
-LEARNING_RATE = 1e-3
-NUM_EPOCHS = 2 
 
 #### LOSS #########################################################################
 # TAKEN FROM: https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
@@ -42,16 +44,25 @@ class ContrastiveLoss(nn.Module):
         return loss_contrastive
 
 #### MODEL FUNCTIONS #############################################################
-def save_model(model: SiameseNetwork, outdir: str | None = None) -> None:
-    if outdir is None: outdir = models_dir
-    filename = f"siamese_{datetime.now().timestamp()}.params"
+def save_model(model: nn.Module, outdir: str | None = None) -> None:
+    if outdir is None: outdir = os.path.join(models_dir, model.name)
+    filename = f"{model.name}_{datetime.now().timestamp()}.params"
     outpath = os.path.join(outdir, filename)
     print(f"Saving model to: {outpath}")
     torch.save(model.state_dict(), outpath)
     return None
  
-def load_model(model_path: str | None = None) -> SiameseNetwork:
-    model = SiameseNetwork()
+def load_model(model_name: str, model_path: str | None = None) -> nn.Module:
+    
+    if model_path is not None:
+        model = os.path.basename(model_path).split('_')[0]
+    
+    if model_name.lower() == 'siamese':
+        model = SiameseNetwork()
+    elif model_name.lower() == 'classifier':
+        model = Classifier()
+    else:
+        raise ValueError(f"model must be either 'siamese' or 'classifier' not {model.lower()}")
 
     if model_path is not None:
         print(f"Loading model from: {model_path}")
@@ -61,12 +72,18 @@ def load_model(model_path: str | None = None) -> SiameseNetwork:
     
     latest_model_datetime = None
     latest_model_path = None
-    for model_filename in os.listdir(models_dir):
-        model_timestamp = float(model_filename.replace('.params', '').replace('siamese_', ''))
+    model_state_dir = os.path.join(models_dir, model_name)
+    for model_filename in os.listdir(model_state_dir):
+        model_timestamp = float(model_filename.replace('.params', '').split('_')[1])
         model_datetime = datetime.fromtimestamp(model_timestamp)
         if latest_model_path is None or model_datetime > latest_model_datetime:
             latest_model_datetime = model_datetime
-            latest_model_path = os.path.join(models_dir, model_filename)
+            latest_model_path = os.path.join(model_state_dir, model_filename)
+
+    if latest_model_path is None:
+        print(f"Warning there were no previous models which could be loaded for {model_name}.")
+        print("So just staring from a new model.")
+        return model
 
     print(f"Loading model from: {latest_model_path}") 
     state_dict = torch.load(latest_model_path)
@@ -79,13 +96,13 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
     train_loader.dataset.set_iter_pairwise(True)
 
     criterion = ContrastiveLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=siamese_config.learning_rate)
     
     model.train()
 
     print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
-    for epoch in range(1, NUM_EPOCHS+1):
+    for epoch in range(1, siamese_config.epochs+1):
         epoch_loss = 0
         for img0, img1, label in train_loader:
             img0, img1 , label = img0.to(device), img1.to(device) , label.to(device)
@@ -102,7 +119,7 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
         
         avg_loss = epoch_loss / len(train_loader)
 
-        print(f"Epoch [{epoch}/{NUM_EPOCHS}], Loss: {avg_loss:.5f}") 
+        print(f"Epoch [{epoch}/{siamese_config.epochs}], Loss: {avg_loss:.5f}") 
 
     print("#### FINISHED TRANING SIAMESE NETWORK #############################################")    
     elapsed_time = time.time() - start_time
@@ -115,14 +132,14 @@ def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader:
     train_loader.dataset.set_iter_pairwise(False)
 
     cross_entropy_loss = CrossEntropyLoss()
-    optimizer = torch.optim.Adam(classifier.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(classifier.parameters(), lr=classifier_config.learning_rate)
 
     model.eval()
     classifier.train()
 
     print("#### STARTED TRANING CLASSIFIER ###################################################")    
     start_time = time.time()
-    for epoch in range(1, 5):
+    for epoch in range(1, classifier_config.epochs+1):
         epoch_loss = 0
         for img, label in train_loader: 
             img, label = img.to(device), label.to(device)
@@ -140,7 +157,7 @@ def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader:
 
         avg_loss = epoch_loss / len(train_loader)
 
-        print(f"Epoch [{epoch}/{NUM_EPOCHS}], Loss: {avg_loss:.5f}")
+        print(f"Epoch [{epoch}/{classifier_config.epochs}], Loss: {avg_loss:.5f}")
 
     print("#### FINISHED TRANING CLASSIFIER ##################################################")   
     elapsed_time = time.time() - start_time

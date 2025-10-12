@@ -12,6 +12,8 @@ class SiameseNetwork(nn.Module):
 
         self._backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 
+        self.name = 'siamese'
+
         return None
     
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
@@ -42,6 +44,8 @@ class Classifier(nn.Module):
             nn.Linear(32, 1),
             nn.Sigmoid(),
         )
+
+        self.name = 'classifier'
 
         return None
     

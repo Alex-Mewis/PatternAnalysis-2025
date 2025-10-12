@@ -14,10 +14,11 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_MODEL = True 
+LOAD_MOST_RECENT_SIAMESE = True 
+LOAD_MOST_RECENT_CLASSIFIER = True 
 
-TRAIN = False 
-TEST = False
+TRAIN_SIAMESE = True
+TRAIN_CLASSIFIER = True
 
 ## DATASETS ################################################
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
@@ -33,18 +34,19 @@ def main() -> None:
     train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     test_dataloader = test_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     
-    model = SiameseNetwork() if not LOAD_MOST_RECENT_MODEL else load_model()
-    classifier = Classifier()
+    siamese = SiameseNetwork() if not LOAD_MOST_RECENT_SIAMESE else load_model('siamese')
+    classifier = Classifier() if not LOAD_MOST_RECENT_CLASSIFIER else load_model('classifier')
     
-    model = model.to(device)
+    siamese = siamese.to(device)
     classifier = classifier.to(device)
 
-    if TRAIN: 
-        train_model(model, train_dataloader) 
-        save_model(model)
-    
-    train_classifer(classifier, model, train_dataloader)
-        
+    if TRAIN_SIAMESE: 
+        train_model(siamese, train_dataloader) 
+        save_model(siamese)
+
+    if TRAIN_CLASSIFIER: 
+        train_classifer(classifier, siamese, train_dataloader)
+        save_model(classifier)
 
 if __name__ == "__main__":
     main()
