@@ -7,9 +7,10 @@ from datetime import datetime
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-from modules import SiameseNetwork
+from modules import SiameseNetwork, Classifier
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -77,22 +78,23 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
 
     train_loader.dataset.set_iter_pairwise(True)
 
-    # Decalre Loss Function
     criterion = ContrastiveLoss()
-    # Declare Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     model.train()
 
-    print("#### STARTING TRANING #############################################################")    
+    print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
     for epoch in range(1, NUM_EPOCHS+1):
         epoch_loss = 0
-        for i, (img0, img1, label) in enumerate(train_loader):
+        for img0, img1, label in train_loader:
             img0, img1 , label = img0.to(device), img1.to(device) , label.to(device)
+            
             optimizer.zero_grad()
+            
             output1, output2 = model(img0, img1)
-            loss= criterion(output1, output2, label)
+            loss = criterion(output1, output2, label)
+            
             loss.backward()
             optimizer.step()    
 
@@ -102,8 +104,47 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
 
         print(f"Epoch [{epoch}/{NUM_EPOCHS}], Loss: {avg_loss:.5f}") 
 
-    print("#### FINISHED TRANING #############################################################")    
+    print("#### FINISHED TRANING SIAMESE NETWORK #############################################")    
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
 
     return None
+
+def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader: DataLoader) -> None:
+
+    train_loader.dataset.set_iter_pairwise(False)
+
+    cross_entropy_loss = CrossEntropyLoss()
+    optimizer = torch.optim.Adam(classifier.parameters(), lr=1e-3)
+
+    model.eval()
+    classifier.train()
+
+    print("#### STARTED TRANING CLASSIFIER ###################################################")    
+    start_time = time.time()
+    for epoch in range(1, 5):
+        epoch_loss = 0
+        for img, label in train_loader: 
+            img, label = img.to(device), label.to(device)
+
+            optimizer.zero_grad()
+
+            latent_vector = model.forward_once(img)
+            out = classifier(latent_vector)
+
+            loss = cross_entropy_loss(out, label)
+            loss.backward()
+            optimizer.step()
+
+            epoch_loss += loss.item()
+
+        avg_loss = epoch_loss / len(train_loader)
+
+        print(f"Epoch [{epoch}/{NUM_EPOCHS}], Loss: {avg_loss:.5f}")
+
+    print("#### FINISHED TRANING CLASSIFIER ##################################################")   
+    elapsed_time = time.time() - start_time
+    print(f"Traning Took: {elapsed_time:.3f}s or {(elapsed_time/60):.3f}mins")
+
+    return None
+

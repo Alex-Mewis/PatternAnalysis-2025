@@ -14,12 +14,14 @@ class SiameseNetwork(nn.Module):
 
         return None
     
-    
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor):
+    def forward_once(self, x: torch.Tensor) -> torch.Tensor:
+        return self._backbone(x)
+
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         """
-        y1 = self._backbone(x1)
-        y2 = self._backbone(x2)
+        y1 = self.forward_once(x1)
+        y2 = self.forward_once(x2)
         return y1, y2 
 
 
@@ -37,11 +39,12 @@ class Classifier(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(64, 32),
             nn.ReLU(inplace=True),
-            nn.Linear(32, 2),
-            nn.SoftMax(inplace=True),
+            nn.Linear(32, 1),
+            nn.Sigmoid(),
         )
 
         return None
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self._fcl(x)
+        out = self._fcl(x)
+        return torch.flatten(out)

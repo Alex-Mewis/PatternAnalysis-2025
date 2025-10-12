@@ -5,8 +5,8 @@ import os
 import torch
 
 from dataset import ISICImageDataset
-from modules import SiameseNetwork
-from train import train_model, save_model, load_model
+from modules import SiameseNetwork, Classifier
+from train import train_model, train_classifer, save_model, load_model
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -16,7 +16,7 @@ if device == 'cpu': print("Warning using CPU!")
 ## CONTROL FLOW ############################################
 LOAD_MOST_RECENT_MODEL = True 
 
-TRAIN = True
+TRAIN = False 
 TEST = False
 
 ## DATASETS ################################################
@@ -34,11 +34,17 @@ def main() -> None:
     test_dataloader = test_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     
     model = SiameseNetwork() if not LOAD_MOST_RECENT_MODEL else load_model()
-    model.to(device)
+    classifier = Classifier()
+    
+    model = model.to(device)
+    classifier = classifier.to(device)
 
     if TRAIN: 
         train_model(model, train_dataloader) 
         save_model(model)
+    
+    train_classifer(classifier, model, train_dataloader)
+        
 
 if __name__ == "__main__":
     main()
