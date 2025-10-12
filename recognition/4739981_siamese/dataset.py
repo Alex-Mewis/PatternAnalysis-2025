@@ -30,6 +30,7 @@ class ISICImageDataset(Dataset):
                  shortcut_labels: np.ndarray | None = None) -> None:
 
         if shortcut_images is not None and shortcut_labels is not None:
+            assert len(shortcut_labels) == len(shortcut_images)
             self._len = len(shortcut_labels)
             self._images_data = shortcut_images
             self._labels = shortcut_labels
@@ -113,7 +114,7 @@ class ISICImageDataset(Dataset):
         test_images = self._images_data[train_n:]
         
         train_labels = self._labels[:train_n]
-        test_labels = self._labels[:train_n]
+        test_labels = self._labels[train_n:]
         
         train_dataset = ISICImageDataset(None, None, train_images, train_labels)
         test_dataset = ISICImageDataset(None, None, test_images, test_labels)

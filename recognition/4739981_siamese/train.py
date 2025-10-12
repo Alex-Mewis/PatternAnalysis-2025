@@ -165,3 +165,30 @@ def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader:
 
     return None
 
+def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: DataLoader) -> None:
+
+    test_loader.dataset.set_iter_pairwise(False)
+
+    siamese.eval()
+    classifier.eval()
+
+
+    print("#### STARTED TESTING ACCURACY #####################################################")  
+    with torch.no_grad():
+        num_correct = 0
+        total = 0
+
+        for img, label in test_loader:
+            img, label = img.to(device), label.to(device)
+
+            latent_vector = siamese.forward_once(img)
+            out = classifier(latent_vector)
+            pred = torch.round(out)
+            
+            total += len(out)
+            num_correct += (pred == label).sum().item()
+        
+        print(f"Testing Accuracy: {(100*num_correct/total):.2f}%")
+
+    print("#### FINISHED TESTING ACCURACY ####################################################")  
+    

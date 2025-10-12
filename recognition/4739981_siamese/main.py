@@ -6,7 +6,7 @@ import torch
 
 from dataset import ISICImageDataset
 from modules import SiameseNetwork, Classifier
-from train import train_model, train_classifer, save_model, load_model
+from train import train_model, train_classifer, save_model, load_model, test_accuracy
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -17,8 +17,9 @@ if device == 'cpu': print("Warning using CPU!")
 LOAD_MOST_RECENT_SIAMESE = True 
 LOAD_MOST_RECENT_CLASSIFIER = True 
 
-TRAIN_SIAMESE = True
-TRAIN_CLASSIFIER = True
+TRAIN_SIAMESE = False 
+TRAIN_CLASSIFIER = False 
+TEST_ACCURACY = True
 
 ## DATASETS ################################################
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
@@ -47,6 +48,9 @@ def main() -> None:
     if TRAIN_CLASSIFIER: 
         train_classifer(classifier, siamese, train_dataloader)
         save_model(classifier)
+
+    if TEST_ACCURACY:
+        test_accuracy(siamese, classifier, test_dataloader)
 
 if __name__ == "__main__":
     main()
