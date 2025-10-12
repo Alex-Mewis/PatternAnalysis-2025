@@ -56,19 +56,24 @@ class ISICImageDataset(Dataset):
         self._labels = np.zeros(self._len)
         for i, image_name in enumerate(image_names):
             label = labels_df.loc[labels_df['image_name'] == image_name, 'target'].iloc[0]
-            self._labels[i] = label 
+            self._labels[i] = label
+
+        self._iter_pairwise = True
         
         return None
     
     def __len__(self) -> int:
         return self._len
     
-    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int]:
+    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int] | tuple[torch.Tensor, int]:
         if (i < 0 or i >= self._len):
             raise IndexError
         
         image = self._images_data[i]
         label = self._labels[i]
+
+        if not self._iter_pairwise:
+            return image, label
 
         # need to find a matching image to pair up with.
         # this matching image needs to be found at random.
@@ -81,6 +86,10 @@ class ISICImageDataset(Dataset):
 
         pair_image = self._images_data[pair_i]
         return image, pair_image, label
+    
+    def set_iter_pairwise(self, iter_pairwise: bool) -> None:
+        self._iter_pairwise = iter_pairwise
+        return None
 
     def shuffle(self) -> None:
         """

@@ -24,7 +24,7 @@ IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
 LABELS_PATH = os.path.join(this_dir, 'data', 'ISIC_2020_Training_GroundTruth.csv')
 
 ## HYPERPARAMETERS #########################################
-BATCH_SIZE = 2 
+BATCH_SIZE = 32 
 
 
 def main() -> None:

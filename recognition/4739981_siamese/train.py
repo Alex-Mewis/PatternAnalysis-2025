@@ -74,7 +74,9 @@ def load_model(model_path: str | None = None) -> SiameseNetwork:
     return model
 
 def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
-    
+
+    train_loader.dataset.set_iter_pairwise(True)
+
     # Decalre Loss Function
     criterion = ContrastiveLoss()
     # Declare Optimizer
@@ -105,4 +107,3 @@ def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
     print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
 
     return None
-
