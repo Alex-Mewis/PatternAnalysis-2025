@@ -1,7 +1,7 @@
 """
 Contains the data loader for loading and preprocesing the data.
 """
-import os, random
+import os, time, random, threading
 from typing import Self
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
@@ -17,10 +17,53 @@ THREADS_USE = 4
 
 to_tesnor_transform = transforms.ToTensor()
 
+def progress_bar_animation(progress: float, num_boxes:int = 66, completed_symbol:str = '∎', waiting_symbol:str = '□') -> None:
+    """ 
+    print out a loading bar animation given the progress made
+
+    Paramters:
+        progress [float] : the percentage of the tast which has been completed
+            is a float usually a float between 0 and 1
+        num_boxes [int] : the number of boxes in the loading animation
+    """
+    if 0 <= progress:
+        num_filled_boxes = int(progress*num_boxes)
+        loading_boxes = completed_symbol*num_filled_boxes  + waiting_symbol*(num_boxes - num_filled_boxes) if not num_filled_boxes > num_boxes else completed_symbol*num_boxes
+        loading_bar = "["+loading_boxes+"]"
+        percentage = '%g'%round(progress*100, 0) if progress <= 1 else "100"
+        while len(percentage) < 3:
+            percentage = " " + percentage
+        print(f"Loading {percentage}% : " + loading_bar, end="\r")
+    
+    return None
+
+def launch_progress_bar(n, total: int):
+    
+    def update_progress_bar() -> None:
+        print("Started Loading in Data")
+        start_time = time.time()
+        while True:
+            progress = n[0]/total
+            progress_bar_animation(progress)
+            if progress == 1:
+                break
+            time.sleep(0.1)
+
+        elapsed_time = time.time() - start_time
+        print(f"\nLoading in Images took {elapsed_time:.3f}s or {(elapsed_time/60):3f}mins")
+        return None
+    
+    thread = threading.Thread(target=update_progress_bar)
+    thread.daemon = True
+    thread.start()
+    return
+
 def load_image_data(args: list) -> None:
-    image_path, image_tensors, i = args
+    image_path, image_tensors, i, n = args
     image = Image.open(image_path)
     image_tensors[i] =  to_tesnor_transform(image)
+    n[0] += 1
+    return None
 
 class ISICImageDataset(Dataset):
     """
@@ -41,10 +84,13 @@ class ISICImageDataset(Dataset):
         image_tensors = [None] * self._len 
         image_names = [None] * self._len
         image_args = [None] * self._len
+        number_of_images_loaded = [0] 
         for i, image_name in enumerate(os.listdir(image_dir)):
             if i >= self._len: break
             image_names[i] = image_name.replace('.jpg', '')
-            image_args[i] = [os.path.join(image_dir, image_name), image_tensors, i]
+            image_args[i] = [os.path.join(image_dir, image_name), image_tensors, i, number_of_images_loaded]
+
+        launch_progress_bar(number_of_images_loaded, self._len)
 
         with ThreadPoolExecutor(max_workers=THREADS_USE) as thread_excecuter:
             for args in image_args:
