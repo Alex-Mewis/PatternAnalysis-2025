@@ -7,6 +7,7 @@ import torch
 from dataset import ISICImageDataset
 from modules import SiameseNetwork, Classifier
 from train import train_model, train_classifer, save_model, load_model, test_accuracy
+from predict import plot_confusion_matrix
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -14,12 +15,14 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_SIAMESE = True 
+LOAD_MOST_RECENT_SIAMESE = True
 LOAD_MOST_RECENT_CLASSIFIER = True 
 
 TRAIN_SIAMESE = False 
 TRAIN_CLASSIFIER = False 
 TEST_ACCURACY = True
+
+MAKE_PREDICTION_PLOTS = True
 
 ## DATASETS ################################################
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
@@ -50,7 +53,11 @@ def main() -> None:
         save_model(classifier)
 
     if TEST_ACCURACY:
-        test_accuracy(siamese, classifier, test_dataloader)
+        predictions, labels = test_accuracy(siamese, classifier, test_dataloader)
+
+    if MAKE_PREDICTION_PLOTS:
+        plot_confusion_matrix(predictions, labels)
+
 
 if __name__ == "__main__":
     main()

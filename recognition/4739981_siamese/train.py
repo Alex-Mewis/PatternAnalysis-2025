@@ -3,6 +3,7 @@ contains code for traning, validating, testing and saving the model.
 """
 import os, time
 from datetime import datetime
+import numpy as np
 
 import torch
 from torch import nn
@@ -19,11 +20,12 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 models_dir = os.path.join(this_dir, "models")
 siamese_models_dir = os.path.join(models_dir, 'siamese')
 classifier_models_dir = os.path.join(models_dir, 'classifier')
+plots_dir = os.path.join(this_dir, "plots")
 
 if not os.path.exists(models_dir): os.mkdir(models_dir)
 if not os.path.exists(siamese_models_dir): os.mkdir(siamese_models_dir)
 if not os.path.exists(classifier_models_dir): os.mkdir(classifier_models_dir)
-
+if not os.path.exists(plots_dir): os.mkdir(plots_dir)
 
 #### LOSS #########################################################################
 # TAKEN FROM: https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
@@ -165,30 +167,39 @@ def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader:
 
     return None
 
-def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: DataLoader) -> None:
+def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
 
     test_loader.dataset.set_iter_pairwise(False)
 
     siamese.eval()
     classifier.eval()
 
+    total_predictions = np.zeros(len(test_loader.dataset))
+    total_labels = np.zeros(len(test_loader.dataset)) 
+    n = 0
 
     print("#### STARTED TESTING ACCURACY #####################################################")  
     with torch.no_grad():
         num_correct = 0
         total = 0
 
-        for img, label in test_loader:
-            img, label = img.to(device), label.to(device)
+        for imgs, labels in test_loader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            batch_size = len(labels)
 
-            latent_vector = siamese.forward_once(img)
+            latent_vector = siamese.forward_once(imgs)
             out = classifier(latent_vector)
             pred = torch.round(out)
-            
+
+            total_predictions[n:n+batch_size] = pred.cpu().numpy() 
+            total_labels[n:n+batch_size] = labels.cpu().numpy()
+            n += batch_size 
+
             total += len(out)
-            num_correct += (pred == label).sum().item()
+            num_correct += (pred == labels).sum().item()
         
         print(f"Testing Accuracy: {(100*num_correct/total):.2f}%")
 
     print("#### FINISHED TESTING ACCURACY ####################################################")  
-    
+
+    return total_predictions, total_labels 
