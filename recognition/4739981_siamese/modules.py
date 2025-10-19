@@ -19,13 +19,10 @@ class SiameseNetwork(nn.Module):
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
         return self._backbone(x)
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, xs: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """
         """
-        y1 = self.forward_once(x1)
-        y2 = self.forward_once(x2)
-        return y1, y2 
-
+        return [self.forward_once(x) for x in xs]
 
 class Classifier(nn.Module):
 

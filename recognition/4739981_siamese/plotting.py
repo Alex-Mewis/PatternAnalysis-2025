@@ -71,8 +71,9 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor) -> None:
     
     outpath = os.path.join(plots_dir, "TSNE Scatter")
     plt.savefig(outpath)
-
     print(f"Saved: {outpath}")
+
+    plt.close()
     return None
 
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
@@ -93,4 +94,5 @@ def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     plt.savefig(outpath)
 
     print(f"Saved: {outpath}")
+    plt.close()
     return None

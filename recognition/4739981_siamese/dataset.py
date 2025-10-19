@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-PERCENTAGE_OF_DATA_TO_LOAD = 0.5 
+PERCENTAGE_OF_DATA_TO_LOAD = 0.1 
 THREADS_USE = 4
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -125,13 +125,25 @@ class ISICImageDataset(Dataset):
             for args in loading_args:
                 thread_executer.submit(load_image, args)
         
-        self._iter_pairwise = True
+        self._triple_iter = True
         
         return None
     
     def __len__(self) -> int:
         return self._len
     
+    def __find_random_pair(self, i: int, label: int) -> torch.Tensor:
+        """
+        """
+        found_pair = False
+        while not found_pair:
+            pair_i = random.randint(0, self._len-1)
+            if pair_i == i: continue
+            pair_label = self._labels[pair_i]
+            found_pair = pair_label == label
+        
+        return fetch_image_data(self._image_filepaths[pair_i])
+
     def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int] | tuple[torch.Tensor, int]:
         if (i < 0 or i >= self._len):
             raise IndexError
@@ -139,23 +151,16 @@ class ISICImageDataset(Dataset):
         image = fetch_image_data(self._image_filepaths[i])
         label = self._labels[i]
 
-        if not self._iter_pairwise:
+        if not self._triple_iter:
             return image, label
 
-        # need to find a matching image to pair up with.
-        # this matching image needs to be found at random.
-        found_pair = False
-        while not found_pair:
-            pair_i = random.randint(0, self._len-1)
-            if pair_i == i: continue
-            pair_label = self._labels[pair_i]
-            found_pair = pair_label == label
-
-        pair_image = fetch_image_data(self._image_filepaths[pair_i])
-        return image, pair_image, label
+        positive_image = self.__find_random_pair(i, label)
+        negative_image = self.__find_random_pair(i, not label)
+        
+        return image, positive_image, negative_image, label
     
-    def set_iter_pairwise(self, iter_pairwise: bool) -> None:
-        self._iter_pairwise = iter_pairwise
+    def set_triple_iter(self, triple_iter: bool) -> None:
+        self._triple_iter = triple_iter 
         return None
 
     def shuffle(self) -> None:
