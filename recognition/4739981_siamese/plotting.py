@@ -31,6 +31,7 @@ def plot_loss(training_loss: list[float], validation_loss: list[float], model_ti
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Loss") 
+    plt.title(f"Loss of {model_title}")
    
     plt.savefig(outpath)
     print(f"Saved: {outpath}") 
