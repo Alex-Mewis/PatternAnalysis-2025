@@ -4,6 +4,7 @@ contains code for traning, validating, testing and saving the model.
 import os, time
 from datetime import datetime
 import numpy as np
+from matplotlib import pyplot as plt
 
 import torch
 from torch import nn
@@ -21,11 +22,13 @@ models_dir = os.path.join(this_dir, "models")
 siamese_models_dir = os.path.join(models_dir, 'siamese')
 classifier_models_dir = os.path.join(models_dir, 'classifier')
 plots_dir = os.path.join(this_dir, "plots")
+train_plots_dir = os.path.join(plots_dir, "train")
 
 if not os.path.exists(models_dir): os.mkdir(models_dir)
 if not os.path.exists(siamese_models_dir): os.mkdir(siamese_models_dir)
 if not os.path.exists(classifier_models_dir): os.mkdir(classifier_models_dir)
 if not os.path.exists(plots_dir): os.mkdir(plots_dir)
+if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
 #### LOSS #########################################################################
 # TAKEN FROM: https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
@@ -93,77 +96,145 @@ def load_model(model_name: str, model_path: str | None = None) -> nn.Module:
 
     return model
 
-def train_model(model: SiameseNetwork, train_loader: DataLoader) -> None:
+def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_loader: DataLoader) -> None:
 
     train_loader.dataset.set_iter_pairwise(True)
+    validation_loader.dataset.set_iter_pairwise(True)
 
     criterion = ContrastiveLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=siamese_config.learning_rate)
+    optimizer = torch.optim.Adam(siamese.parameters(), lr=siamese_config.learning_rate)
     
-    model.train()
+    training_epoch_losses = list()
+    validation_epoch_losses = list()
 
     print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
     for epoch in range(1, siamese_config.epochs+1):
-        epoch_loss = 0
+
+        # train. 
+        siamese.train()
+        training_epoch_loss = 0
         for img0, img1, label in train_loader:
             img0, img1 , label = img0.to(device), img1.to(device) , label.to(device)
             
             optimizer.zero_grad()
             
-            output1, output2 = model(img0, img1)
+            output1, output2 = siamese(img0, img1)
             loss = criterion(output1, output2, label)
             
             loss.backward()
             optimizer.step()    
 
-            epoch_loss += loss.item()
-        
-        avg_loss = epoch_loss / len(train_loader)
+            training_epoch_loss += loss.item()
 
-        print(f"Epoch [{epoch}/{siamese_config.epochs}], Loss: {avg_loss:.5f}") 
+        training_avg_loss = training_epoch_loss / len(train_loader)
+        training_epoch_losses.append(training_avg_loss)
+
+        # validate. 
+        siamese.eval()
+        validation_epoch_loss = 0
+        with torch.no_grad():
+            for img0, img1, label in validation_loader:
+                img0, img1, label = img0.to(device), img1.to(device), label.to(device)
+                out0, out1 = siamese(img0, img1) 
+                loss = criterion(out0, out1, label)
+
+                validation_epoch_loss += loss.item() 
+
+        validation_avg_loss = validation_epoch_loss / len(validation_loader)
+        validation_epoch_losses.append(validation_avg_loss)
+
+
+        print(f"Epoch [{epoch}/{siamese_config.epochs}], Traning Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}") 
 
     print("#### FINISHED TRANING SIAMESE NETWORK #############################################")    
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
 
+    # plot the traning and validation loss on the same axis.
+    epochs = list(range(1, siamese_config.epochs+1))
+    plt.plot(epochs, training_epoch_losses, label="Traning")
+    plt.plot(epochs, validation_epoch_losses, label="Validation")
+    plt.legend()
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss") 
+    plt.title("Loss of Siamese Network")
+    plt.savefig(os.path.join(train_plots_dir, f"siamese_{datetime.now().timestamp()}.png")) 
+    plt.close() 
+
     return None
 
-def train_classifer(classifier: Classifier, model: SiameseNetwork, train_loader: DataLoader) -> None:
+def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loader: DataLoader, validation_loader: DataLoader) -> None:
 
     train_loader.dataset.set_iter_pairwise(False)
+    validation_loader.dataset.set_iter_pairwise(False)
 
     cross_entropy_loss = CrossEntropyLoss()
     optimizer = torch.optim.Adam(classifier.parameters(), lr=classifier_config.learning_rate)
 
-    model.eval()
-    classifier.train()
+    siamese.eval()
+    
+    training_epoch_losses = list()
+    validation_epoch_losses = list()
 
     print("#### STARTED TRANING CLASSIFIER ###################################################")    
     start_time = time.time()
     for epoch in range(1, classifier_config.epochs+1):
-        epoch_loss = 0
+        
+        # train.
+        classifier.train()
+        training_epoch_loss = 0
         for img, label in train_loader: 
             img, label = img.to(device), label.to(device)
 
             optimizer.zero_grad()
 
-            latent_vector = model.forward_once(img)
+            latent_vector = siamese.forward_once(img)
             out = classifier(latent_vector)
 
             loss = cross_entropy_loss(out, label)
             loss.backward()
             optimizer.step()
 
-            epoch_loss += loss.item()
+            training_epoch_loss += loss.item()
 
-        avg_loss = epoch_loss / len(train_loader)
+        training_avg_loss = training_epoch_loss / len(train_loader)
+        training_epoch_losses.append(training_avg_loss)
 
-        print(f"Epoch [{epoch}/{classifier_config.epochs}], Loss: {avg_loss:.5f}")
+        # validate.
+        classifier.eval()
+        validation_epoch_loss = 0
+        with torch.no_grad():
+            for img, label in validation_loader:
+                img, label = img.to(device), label.to(device)
+
+                latent_vector = siamese.forward_once(img)
+                out = classifier(latent_vector)
+
+                loss = cross_entropy_loss(out, label)
+
+                validation_epoch_loss += loss.item()
+
+        validation_avg_loss = validation_epoch_loss / len(validation_loader)
+        validation_epoch_losses.append(validation_avg_loss)        
+
+        print(f"Epoch [{epoch}/{classifier_config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
+
 
     print("#### FINISHED TRANING CLASSIFIER ##################################################")   
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:.3f}s or {(elapsed_time/60):.3f}mins")
+
+    # plot the traning and validation loss on the same axis.
+    epochs = list(range(1, siamese_config.epochs+1))
+    plt.plot(epochs, training_epoch_losses, label="Traning")
+    plt.plot(epochs, validation_epoch_losses, label="Validation")
+    plt.legend()
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss") 
+    plt.title("Loss of Binary Classifier")
+    plt.savefig(os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")) 
+    plt.close()
 
     return None
 

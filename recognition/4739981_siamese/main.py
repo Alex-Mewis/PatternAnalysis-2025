@@ -15,11 +15,11 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_SIAMESE = True
-LOAD_MOST_RECENT_CLASSIFIER = True 
+LOAD_MOST_RECENT_SIAMESE = False 
+LOAD_MOST_RECENT_CLASSIFIER = False 
 
-TRAIN_SIAMESE = False 
-TRAIN_CLASSIFIER = False 
+TRAIN_SIAMESE = True 
+TRAIN_CLASSIFIER = True 
 TEST_ACCURACY = True
 
 MAKE_PREDICTION_PLOTS = True
@@ -34,8 +34,12 @@ BATCH_SIZE = 32
 
 def main() -> None:
     dataset = ISICImageDataset(IMAGE_DIR, LABELS_PATH) 
-    train_dataset, test_dataset = dataset.split()   
+
+    # split the data set into 70% train, 15% validation and 15% test.
+    train_dataset, hidden_dataset = dataset.split(p=0.7)   
+    validation_dataset, test_dataset = hidden_dataset.split(p=0.5)
     train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
+    validation_dataloader = validation_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     test_dataloader = test_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     
     siamese = SiameseNetwork() if not LOAD_MOST_RECENT_SIAMESE else load_model('siamese')
@@ -45,11 +49,11 @@ def main() -> None:
     classifier = classifier.to(device)
 
     if TRAIN_SIAMESE: 
-        train_model(siamese, train_dataloader) 
+        train_model(siamese, train_dataloader, validation_dataloader) 
         save_model(siamese)
 
     if TRAIN_CLASSIFIER: 
-        train_classifer(classifier, siamese, train_dataloader)
+        train_classifer(classifier, siamese, train_dataloader, validation_dataloader)
         save_model(classifier)
 
     if TEST_ACCURACY:
