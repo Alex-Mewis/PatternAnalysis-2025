@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-PERCENTAGE_OF_DATA_TO_LOAD = 0.1 
+PERCENTAGE_OF_DATA_TO_LOAD = 0.5 
 THREADS_USE = 4
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

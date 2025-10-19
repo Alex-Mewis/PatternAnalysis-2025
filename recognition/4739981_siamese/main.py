@@ -19,10 +19,10 @@ LOAD_MOST_RECENT_SIAMESE = False
 LOAD_MOST_RECENT_CLASSIFIER = False 
 
 TRAIN_SIAMESE = True 
-TRAIN_CLASSIFIER = True 
-TEST_ACCURACY = True
+TRAIN_CLASSIFIER = True
+TEST_ACCURACY = True 
 
-MAKE_PREDICTION_PLOTS = True
+MAKE_PREDICTION_PLOTS = True 
 
 ## DATASETS ################################################
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')

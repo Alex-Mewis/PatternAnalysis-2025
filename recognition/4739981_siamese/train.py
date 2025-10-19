@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 from modules import SiameseNetwork, Classifier
 from configs import siamese_config, classifier_config
-from plotting import plot_loss
+from plotting import plot_loss, plot_tsne 
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -44,6 +44,7 @@ class ContrastiveLoss(nn.Module):
                             (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
         return loss_contrastive
+
 
 #### MODEL FUNCTIONS #############################################################
 def save_model(model: nn.Module, outdir: str | None = None) -> None:
@@ -103,6 +104,9 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
     
     training_epoch_losses = list()
     validation_epoch_losses = list()
+    
+    features = torch.empty((0, 1000)).to(device)
+    labels = torch.empty(0).to(device)
 
     print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
@@ -138,17 +142,23 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
                 validation_epoch_loss += loss.item() 
 
+                if epoch == siamese_config.epochs:
+                    features = torch.cat([features, out0])
+                    labels = torch.cat([labels, label])
+
         validation_avg_loss = validation_epoch_loss / len(validation_loader)
         validation_epoch_losses.append(validation_avg_loss)
 
 
-        print(f"Epoch [{epoch}/{siamese_config.epochs}], Traning Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}") 
+        print(f"Epoch [{epoch}/{siamese_config.epochs}], Traning Loss: {training_avg_loss:.6g}, Validation Loss: {validation_avg_loss:.6g}") 
 
     print("#### FINISHED TRANING SIAMESE NETWORK #############################################")    
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
 
     plot_loss(training_epoch_losses, validation_epoch_losses, "Siamese Network")
+
+    plot_tsne(features, labels) 
 
     return None
 
@@ -206,7 +216,7 @@ def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loade
         validation_avg_loss = validation_epoch_loss / len(validation_loader)
         validation_epoch_losses.append(validation_avg_loss)        
 
-        print(f"Epoch [{epoch}/{classifier_config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
+        print(f"Epoch [{epoch}/{classifier_config.epochs}], Training Loss: {training_avg_loss:.6g}, Validation Loss: {validation_avg_loss:.6g}")
 
 
     print("#### FINISHED TRANING CLASSIFIER ##################################################")   

@@ -4,6 +4,8 @@ Contains all of the relavent functions for making plots.
 import os
 from datetime import datetime
 import numpy as np
+import torch
+from sklearn.manifold import TSNE
 
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -34,9 +36,44 @@ def plot_loss(training_loss: list[float], validation_loss: list[float], model_ti
     print(f"Saved: {outpath}") 
     
     plt.close()
-
     return None
 
+
+def plot_tsne(features: torch.Tensor, labels: torch.Tensor) -> None:
+
+    features, labels = features.cpu().numpy(), labels.cpu().numpy()
+    tsne = TSNE()
+    tsne_output = tsne.fit_transform(features)
+
+    benign_tsne = tsne_output[labels == 0, :]
+    malignant_tsne = tsne_output[labels == 1, :]
+
+    plt.scatter(
+        benign_tsne[:,0],
+        benign_tsne[:,1],
+        c='blue',
+        label="Benign",
+    )
+
+    plt.scatter(
+        x=malignant_tsne[:,0],
+        y=malignant_tsne[:,1],
+        c='red',
+        label="Malignant",
+    )
+
+    plt.legend()
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlabel('')
+    plt.ylabel('')
+    plt.title("TSNE Scatter")
+    
+    outpath = os.path.join(plots_dir, "TSNE Scatter")
+    plt.savefig(outpath)
+
+    print(f"Saved: {outpath}")
+    return None
 
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     """
