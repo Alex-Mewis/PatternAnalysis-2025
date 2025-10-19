@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 
 from modules import SiameseNetwork, Classifier
 from configs import siamese_config, classifier_config
+from plotting import plot_loss
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -21,14 +22,10 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 models_dir = os.path.join(this_dir, "models")
 siamese_models_dir = os.path.join(models_dir, 'siamese')
 classifier_models_dir = os.path.join(models_dir, 'classifier')
-plots_dir = os.path.join(this_dir, "plots")
-train_plots_dir = os.path.join(plots_dir, "train")
 
 if not os.path.exists(models_dir): os.mkdir(models_dir)
 if not os.path.exists(siamese_models_dir): os.mkdir(siamese_models_dir)
 if not os.path.exists(classifier_models_dir): os.mkdir(classifier_models_dir)
-if not os.path.exists(plots_dir): os.mkdir(plots_dir)
-if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
 #### LOSS #########################################################################
 # TAKEN FROM: https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
@@ -151,16 +148,7 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:3f}s or {(elapsed_time/60):.3f}mins")
 
-    # plot the traning and validation loss on the same axis.
-    epochs = list(range(1, siamese_config.epochs+1))
-    plt.plot(epochs, training_epoch_losses, label="Traning")
-    plt.plot(epochs, validation_epoch_losses, label="Validation")
-    plt.legend()
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss") 
-    plt.title("Loss of Siamese Network")
-    plt.savefig(os.path.join(train_plots_dir, f"siamese_{datetime.now().timestamp()}.png")) 
-    plt.close() 
+    plot_loss(training_epoch_losses, validation_epoch_losses, "Siamese Network")
 
     return None
 
@@ -225,16 +213,7 @@ def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loade
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:.3f}s or {(elapsed_time/60):.3f}mins")
 
-    # plot the traning and validation loss on the same axis.
-    epochs = list(range(1, siamese_config.epochs+1))
-    plt.plot(epochs, training_epoch_losses, label="Traning")
-    plt.plot(epochs, validation_epoch_losses, label="Validation")
-    plt.legend()
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss") 
-    plt.title("Loss of Binary Classifier")
-    plt.savefig(os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")) 
-    plt.close()
+    plot_loss(training_epoch_losses, validation_epoch_losses, "Binary Classifier")
 
     return None
 

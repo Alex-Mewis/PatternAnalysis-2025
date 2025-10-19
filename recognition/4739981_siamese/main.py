@@ -7,7 +7,7 @@ import torch
 from dataset import ISICImageDataset
 from modules import SiameseNetwork, Classifier
 from train import train_model, train_classifer, save_model, load_model, test_accuracy
-from predict import plot_confusion_matrix
+from plotting import plot_confusion_matrix
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
