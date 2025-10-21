@@ -10,14 +10,28 @@ import numpy as np
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from torchvision.transforms import v2
 
 PERCENTAGE_OF_DATA_TO_LOAD = 0.1 
 THREADS_USE = 4
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-to_tesnor_transform = transforms.ToTensor()
+#### CONFIGURABLES ###########################################################
+IMAGE_TRANSFORMS = v2.Compose([
+    v2.RandomRotation(degrees=(0, 15)),
+    v2.RandomVerticalFlip(),
+    v2.RandomHorizontalFlip(),
+    v2.ToImage(),
+    v2.ToDtype(torch.float32, scale=True),
+    v2.GaussianNoise(),
+    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+BASIC_TRANSFORMS = v2.Compose([
+    v2.ToImage(),
+    v2.ToDtype(torch.float32, scale=True),
+])
 
 def progress_bar_animation(progress: float, num_boxes:int = 66, completed_symbol:str = '∎', waiting_symbol:str = '□') -> None:
     """ 
@@ -60,10 +74,6 @@ def launch_progress_bar(n, total: int) -> None:
 
     return None 
 
-def fetch_image_data(filepath: str) -> None:
-    image = Image.open(filepath)
-    return to_tesnor_transform(image).to(device)
-
 def load_image(args: list) -> None: 
     i, image_filepath, image_filepaths, labels_df, labels, n = args
     
@@ -96,7 +106,10 @@ class ISICImageDataset(Dataset):
     """
     def __init__(self, image_dir: str, labels_path: str,
                  shortcut_images: np.ndarray | None = None,
-                 shortcut_labels: np.ndarray | None = None) -> None:
+                 shortcut_labels: np.ndarray | None = None,
+                 transforms = IMAGE_TRANSFORMS) -> None:
+
+        self._transforms = transforms
 
         if shortcut_images is not None and shortcut_labels is not None:
             assert len(shortcut_labels) == len(shortcut_images)
@@ -132,6 +145,11 @@ class ISICImageDataset(Dataset):
     def __len__(self) -> int:
         return self._len
     
+    def __fetch_image_data(self, filepath: str) -> torch.Tensor:
+        image = Image.open(filepath).convert("RGB")
+        image_data = self._transforms(image) 
+        return image_data.to(device)
+
     def __find_random_pair(self, i: int, label: int) -> torch.Tensor:
         """
         """
@@ -142,13 +160,13 @@ class ISICImageDataset(Dataset):
             pair_label = self._labels[pair_i]
             found_pair = pair_label == label
         
-        return fetch_image_data(self._image_filepaths[pair_i])
+        return self.__fetch_image_data(self._image_filepaths[pair_i])
 
     def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int] | tuple[torch.Tensor, int]:
         if (i < 0 or i >= self._len):
             raise IndexError
         
-        image = fetch_image_data(self._image_filepaths[i])
+        image = self.__fetch_image_data(self._image_filepaths[i])
         label = self._labels[i]
 
         if not self._triple_iter:
