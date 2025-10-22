@@ -86,9 +86,11 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
     
     training_epoch_losses = list()
     validation_epoch_losses = list()
-    
-    features = torch.empty((0, 1000)).to(device)
-    labels = torch.empty(0).to(device)
+
+    train_features = torch.empty((0, 1000)).to(device)
+    validation_features = torch.empty((0, 1000)).to(device)
+    train_labels = torch.empty(0).to(device)
+    validation_labels = torch.empty(0).to(device)
 
     print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
@@ -112,6 +114,10 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
             training_epoch_loss += loss.item()
 
+            if epoch == siamese_config.epochs:
+                train_features = torch.cat([train_features, anchor_features])
+                train_labels = torch.cat([train_labels, label])
+
         training_avg_loss = training_epoch_loss / len(train_loader)
         training_epoch_losses.append(training_avg_loss)
 
@@ -129,8 +135,8 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
                 validation_epoch_loss += loss.item() 
 
                 if epoch == siamese_config.epochs:
-                    features = torch.cat([features, anchor_features])
-                    labels = torch.cat([labels, label])
+                    validation_features = torch.cat([validation_features, anchor_features])
+                    validation_labels = torch.cat([validation_labels, label])
 
         validation_avg_loss = validation_epoch_loss / len(validation_loader)
         validation_epoch_losses.append(validation_avg_loss)
@@ -144,7 +150,8 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
     plot_loss(training_epoch_losses, validation_epoch_losses, "Siamese Network")
 
-    plot_tsne(features, labels) 
+    plot_tsne(train_features, train_labels, "Train")
+    plot_tsne(validation_features, validation_labels, "Validation")
 
     return None
 
