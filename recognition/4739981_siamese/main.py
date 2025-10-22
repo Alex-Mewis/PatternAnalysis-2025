@@ -38,9 +38,14 @@ def main() -> None:
     # split the data set into 70% train, 15% validation and 15% test.
     train_dataset, hidden_dataset = dataset.split(p=0.7)   
     validation_dataset, test_dataset = hidden_dataset.split(p=0.5)
+    
+    train_dataset.force_even_data()
+    validation_dataset.force_even_data()
+    
     train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     validation_dataloader = validation_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     test_dataloader = test_dataset.to_DataLoader(batch_size=BATCH_SIZE)
+
     
     siamese = SiameseNetwork() if not LOAD_MOST_RECENT_SIAMESE else load_model('siamese')
     classifier = Classifier() if not LOAD_MOST_RECENT_CLASSIFIER else load_model('classifier')

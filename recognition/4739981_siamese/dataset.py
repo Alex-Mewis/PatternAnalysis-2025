@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
-PERCENTAGE_OF_DATA_TO_LOAD = 0.1 
+PERCENTAGE_OF_DATA_TO_LOAD = 0.3
 THREADS_USE = 4
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -105,46 +105,70 @@ class ISICImageDataset(Dataset):
     """
     """
     def __init__(self, image_dir: str, labels_path: str,
-                 shortcut_images: np.ndarray | None = None,
-                 shortcut_labels: np.ndarray | None = None,
+                 shortcut_positive_images: np.ndarray | None = None,
+                 shortcut_negative_images: np.ndarray | None = None,
                  transforms = IMAGE_TRANSFORMS) -> None:
 
         self._transforms = transforms
 
-        if shortcut_images is not None and shortcut_labels is not None:
-            assert len(shortcut_labels) == len(shortcut_images)
-            self._len = len(shortcut_labels)
-            self._image_filepaths = shortcut_images
-            self._labels = shortcut_labels
+        if shortcut_positive_images is not None and shortcut_negative_images is not None:
+            self._positive_images = shortcut_positive_images
+            self._negative_images = shortcut_negative_images
             return None
 
         # get the image data.
-        self._len = int(len(os.listdir(image_dir)) * PERCENTAGE_OF_DATA_TO_LOAD)
+        n = int(len(os.listdir(image_dir)) * PERCENTAGE_OF_DATA_TO_LOAD)
         
         labels_df = pd.read_csv(labels_path)
-        self._labels = np.zeros(self._len)
-        loading_args = [None] * self._len
-        self._image_filepaths = np.empty(self._len, dtype=object)
+        labels = np.zeros(n)
+        loading_args = [None] * n 
+        image_filepaths = [None] * n 
         number_of_images_loaded = [0]
         
         for i, image_name in enumerate(os.listdir(image_dir)):
-            if i >= self._len: break
-            loading_args[i] = [i, os.path.join(image_dir, image_name), self._image_filepaths, 
-                               labels_df, self._labels, number_of_images_loaded]
+            if i >= n: break
+            loading_args[i] = [i, os.path.join(image_dir, image_name), image_filepaths, 
+                               labels_df, labels, number_of_images_loaded]
 
-        launch_progress_bar(number_of_images_loaded, self._len)
+        launch_progress_bar(number_of_images_loaded, n)
         
         with ThreadPoolExecutor(max_workers=THREADS_USE) as thread_executer:
             for args in loading_args:
                 thread_executer.submit(load_image, args)
+
+        # sort the images into positive and negative labels.
+        self._positive_images = list()
+        self._negative_images = list()
+        for label in labels:
+            if not label:
+                self._negative_images.append(image_filepaths.pop(0))
+            else:
+                self._positive_images.append(image_filepaths.pop(0))
+        
+        random.shuffle(self._negative_images)
+        random.shuffle(self._positive_images)
         
         self._triple_iter = True
         
         return None
     
     def __len__(self) -> int:
-        return self._len
+        return len(self._negative_images) + len(self._positive_images) 
     
+    def force_even_data(self) -> None:
+
+        # increase the positive images to be the same size as the negative
+        n = len(self._positive_images)
+        pos_i = 0
+        for i in range(len(self._positive_images), len(self._negative_images)):
+            self._positive_images.append(self._positive_images[pos_i])
+            pos_i = pos_i + 1 if pos_i != n - 1 else 0 
+
+        # TODO remove this check
+        assert len(self._positive_images) == len(self._negative_images) 
+
+        return None
+
     def __fetch_image_data(self, filepath: str) -> torch.Tensor:
         image = Image.open(filepath).convert("RGB")
         image_data = self._transforms(image) 
@@ -153,21 +177,28 @@ class ISICImageDataset(Dataset):
     def __find_random_pair(self, i: int, label: int) -> torch.Tensor:
         """
         """
-        found_pair = False
-        while not found_pair:
-            pair_i = random.randint(0, self._len-1)
-            if pair_i == i: continue
-            pair_label = self._labels[pair_i]
-            found_pair = pair_label == label
-        
-        return self.__fetch_image_data(self._image_filepaths[pair_i])
+        search_space = self._positive_images if label else self._negative_images
+        pair_i = i
 
-    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, int] | tuple[torch.Tensor, int]:
-        if (i < 0 or i >= self._len):
+        while pair_i == i: pair_i = random.randint(0, len(search_space)-1)
+
+        return self.__fetch_image_data(search_space[pair_i])
+
+    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, float] | tuple[torch.Tensor, float]:
+        if (i < 0 or i >= len(self)):
             raise IndexError
-        
-        image = self.__fetch_image_data(self._image_filepaths[i])
-        label = self._labels[i]
+
+        if i >= 2*len(self._positive_images) + 1:
+            filepath = self._negative_images[i - len(self._positive_images)]
+            label = 0.0
+        elif i % 2:
+            filepath = self._positive_images[(i-1)//2]
+            label = 1.0
+        else:
+            filepath = self._negative_images[(i-1)//2]
+            label = 0.0
+
+        image = self.__fetch_image_data(filepath)
 
         if not self._triple_iter:
             return image, label
@@ -181,32 +212,21 @@ class ISICImageDataset(Dataset):
         self._triple_iter = triple_iter 
         return None
 
-    def shuffle(self) -> None:
+    def split(self, p: float = 0.8) -> tuple[Self, Self]:
         """
         """
-        shuffled_indicies = list(range(self._len)) 
-        random.shuffle(shuffled_indicies)
-        
-        self._image_filepaths = self._image_filepaths[shuffled_indicies]
-        self._labels = self._labels[shuffled_indicies]
-        
-        return None
 
-    def split(self, p: float = 0.8, shuffle: bool = True) -> tuple[Self, Self]:
-        """
-        """
-        if shuffle: self.shuffle()
+        n_pos = int(p*len(self._positive_images))
+        n_neg = int(p*len(self._negative_images))
 
-        train_n = int(p*self._len)
+        train_positive_filepaths = self._positive_images[:n_pos]
+        test_positive_filepaths = self._positive_images[n_pos:]
+        train_negative_filepaths = self._negative_images[:n_neg]
+        test_negative_filepaths = self._negative_images[n_neg:]
 
-        train_image_filepaths = self._image_filepaths[:train_n]
-        test_image_filepaths = self._image_filepaths[train_n:]
-        
-        train_labels = self._labels[:train_n]
-        test_labels = self._labels[train_n:]
-        
-        train_dataset = ISICImageDataset(None, None, train_image_filepaths, train_labels)
-        test_dataset = ISICImageDataset(None, None, test_image_filepaths, test_labels)
+
+        train_dataset = ISICImageDataset(None, None, train_positive_filepaths, train_negative_filepaths)
+        test_dataset = ISICImageDataset(None, None, test_positive_filepaths, test_negative_filepaths)
 
         return train_dataset, test_dataset
 
