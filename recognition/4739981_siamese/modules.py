@@ -10,14 +10,16 @@ class SiameseNetwork(nn.Module):
     def __init__(self) -> None:
         super(SiameseNetwork, self).__init__()
 
-        self._backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        self._backbone = nn.Sequential(*list(resnet.children())[:-1])
 
         self.name = 'siamese'
 
         return None
     
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
-        return self._backbone(x)
+        out  = self._backbone(x)
+        return out.view(out.size(0), -1)
 
     def forward(self, xs: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -26,13 +28,11 @@ class SiameseNetwork(nn.Module):
 
 class Classifier(nn.Module):
 
-    def __init__(self, input_dim: int = 1000) -> None:
+    def __init__(self, input_dim: int = 512) -> None:
         super(Classifier, self).__init__()
 
         self._fcl = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Linear(512, 128),
+            nn.Linear(input_dim, 128),
             nn.ReLU(inplace=True),
             nn.Linear(128, 64),
             nn.ReLU(inplace=True),

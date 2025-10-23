@@ -87,8 +87,8 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
     training_epoch_losses = list()
     validation_epoch_losses = list()
 
-    train_features = torch.empty((0, 1000)).to(device)
-    validation_features = torch.empty((0, 1000)).to(device)
+    train_features = torch.empty((0, 512)).to(device)
+    validation_features = torch.empty((0, 512)).to(device)
     train_labels = torch.empty(0).to(device)
     validation_labels = torch.empty(0).to(device)
 
