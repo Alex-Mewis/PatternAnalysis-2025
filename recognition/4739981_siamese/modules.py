@@ -32,13 +32,17 @@ class Classifier(nn.Module):
         super(Classifier, self).__init__()
 
         self._fcl = nn.Sequential(
-            nn.Linear(input_dim, 128),
+            nn.Linear(input_dim, 256),
             nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+
             nn.Linear(128, 64),
             nn.ReLU(inplace=True),
-            nn.Linear(64, 32),
-            nn.ReLU(inplace=True),
-            nn.Linear(32, 1),
+            nn.Linear(64, 1),
             nn.Sigmoid(),
         )
 

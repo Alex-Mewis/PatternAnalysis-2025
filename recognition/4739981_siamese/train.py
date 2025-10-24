@@ -4,11 +4,9 @@ contains code for traning, validating, testing and saving the model.
 import os, time
 from datetime import datetime
 import numpy as np
-from matplotlib import pyplot as plt
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 from torch.nn import TripletMarginLoss, CrossEntropyLoss
 from torch.utils.data import DataLoader
 

@@ -12,19 +12,20 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
-PERCENTAGE_OF_DATA_TO_LOAD = 0.05
+PERCENTAGE_OF_DATA_TO_LOAD = 1.0    
 THREADS_USE = 4
 
+random.seed(42)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #### CONFIGURABLES ###########################################################
 IMAGE_TRANSFORMS = v2.Compose([
-    v2.RandomRotation(degrees=(0, 15)),
+    v2.RandomRotation(10),
     v2.RandomVerticalFlip(),
     v2.RandomHorizontalFlip(),
+    v2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
-    v2.GaussianNoise(),
     v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
@@ -162,7 +163,9 @@ class ISICImageDataset(Dataset):
         pos_i = 0
         for i in range(len(self._positive_images), len(self._negative_images)):
             self._positive_images.append(self._positive_images[pos_i])
-            pos_i = pos_i + 1 if pos_i != n - 1 else 0 
+            pos_i = pos_i + 1 if pos_i != n - 1 else 0
+
+        random.shuffle(self._positive_images)
 
         # TODO remove this check
         assert len(self._positive_images) == len(self._negative_images) 
@@ -174,13 +177,14 @@ class ISICImageDataset(Dataset):
         image_data = self._transforms(image) 
         return image_data.to(device)
 
-    def __find_random_pair(self, i: int, label: int) -> torch.Tensor:
+    def __find_random_pair(self, i: int, label: int, image_filepath: str) -> torch.Tensor:
         """
         """
         search_space = self._positive_images if label else self._negative_images
         pair_i = i
 
-        while pair_i == i: pair_i = random.randint(0, len(search_space)-1)
+        while pair_i == i or search_space[pair_i] == image_filepath:
+            pair_i = random.randint(0, len(search_space)-1)
 
         return self.__fetch_image_data(search_space[pair_i])
 
@@ -203,8 +207,8 @@ class ISICImageDataset(Dataset):
         if not self._triple_iter:
             return image, label
 
-        positive_image = self.__find_random_pair(i, label)
-        negative_image = self.__find_random_pair(i, not label)
+        positive_image = self.__find_random_pair(i, label, filepath)
+        negative_image = self.__find_random_pair(i, not label, filepath)
         
         return image, positive_image, negative_image, label
     

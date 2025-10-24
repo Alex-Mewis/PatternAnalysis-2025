@@ -37,7 +37,7 @@ def plot_loss(training_loss: list[float], validation_loss: list[float], model_ti
     outpath = os.path.join(train_plots_dir, f"{model_name}_{datetime.now().timestamp()}.png")
 
     epochs = list(range(1, len(training_loss)+1))   
-    plt.plot(epochs, training_loss, label="Traning")
+    plt.plot(epochs, training_loss, label="Training")
     plt.plot(epochs, validation_loss, label="Validation")
     plt.legend()
     plt.xlabel("Epoch")
@@ -105,7 +105,7 @@ def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
                         [get_num_incorrect(1), get_num_correct(0)  ]]
 
     sns.heatmap(confusion_matrix, xticklabels=['Actually Malignant', 'Actually Benign'],
-                yticklabels=['Preidcted Malignant', 'Predicted Bengin'], annot=True, cmap=catpuccin_cmap)
+                yticklabels=['Preidcted Malignant', 'Predicted Bengin'], annot=True, cmap=catpuccin_cmap, fmt='d')
     
     plt.title(f"Confusion Matrix")
 
