@@ -11,7 +11,7 @@ class SiameseNetwork(nn.Module):
         super(SiameseNetwork, self).__init__()
 
         resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-        self._backbone = nn.Sequential(*list(resnet.children())[:-2])
+        self._backbone = nn.Sequential(*list(resnet.children())[:-1])
         
         self.name = 'siamese'
 
@@ -19,7 +19,7 @@ class SiameseNetwork(nn.Module):
     
     @property
     def final_layer(self) -> nn.Module:
-        return list(self._backbone.children())[-1]
+        return list(self._backbone.children())[-2] # skip the average pool layer
     
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
         out  = self._backbone(x)
