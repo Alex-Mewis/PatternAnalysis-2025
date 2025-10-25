@@ -39,17 +39,17 @@ Download ```Python 3.13.7``` from [here](https://www.python.org/downloads/). The
 py -m pip install -r requirements.txt
 ```
 Which will install all of the following packages:
-- ```catppuccin         == 2.5.0```
-- ```grad-cam           == 1.5.5```
-- ```matplotlib         == 3.10.6```
-- ```numpy              == 2.2.6```
-- ```pandas             == 2.3.3```
-- ```pillow             == 11.0.0```
-- ```scikit-learn       == 1.7.2```
-- ```scipy              == 1.16.2```
-- ```seaborn            == 0.13.2```
-- ```torch              == 2.8.0+cu126```
-- ```torchvision        == 0.23.0+cu126```
+- ```catppuccin == 2.5.0```
+- ```grad-cam == 1.5.5```
+- ```matplotlib == 3.10.6```
+- ```numpy == 2.2.6```
+- ```pandas == 2.3.3```
+- ```pillow == 11.0.0```
+- ```scikit-learn == 1.7.2```
+- ```scipy == 1.16.2```
+- ```seaborn == 0.13.2```
+- ```torch == 2.8.0+cu126```
+- ```torchvision == 0.23.0+cu126```
 
 ## Data Preporation
 
