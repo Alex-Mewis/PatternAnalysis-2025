@@ -19,3 +19,47 @@ The dataset is hosted on Kaggle [here](https://www.kaggle.com/competitions/siim-
 Due to computation limits and redundancy in a high resolution 1024x1024 image the model was trained on a resized version of the dataset so all images are only 256x256. This resized dataset can be found [here](https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-256x256-resized). There is a major class imbalance in the dataset as very little of the images are malignant. So a heavy focus for this project was put to counter acting this imbalance by oversampling the minory class and applying augmentations to the images.
 
 ## Enviroment Setup
+Ensure you are in the ```47399811_siamese``` folder in the repository. If you are in the main directory of the repository, ```PatternAnalysis-2025``` run the following command:
+```
+cd recognition/47399811_siamese
+```
+to navigate to the correct directory.
+
+### Adding the Dataset
+Run the following commands to setup the directory for the data
+```
+mkdir data
+mkdir data/images
+```
+Then download the dataset from [here](https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-256x256-resized) and all of the images in the ```data/images``` folder and add the CSV file named ```ISIC_2020_Training_GroundTruth.csv``` to the ```data``` folder.
+
+### Pyhon Setup
+Download ```Python 3.13.7``` from [here](https://www.python.org/downloads/). Then to install of the required packages run the following command:
+```
+py -m pip install -r requirements.txt
+```
+Which will install all of the following packages:
+- ```catppuccin         == 2.5.0```
+- ```grad-cam           == 1.5.5```
+- ```matplotlib         == 3.10.6```
+- ```numpy              == 2.2.6```
+- ```pandas             == 2.3.3```
+- ```pillow             == 11.0.0```
+- ```scikit-learn       == 1.7.2```
+- ```scipy              == 1.16.2```
+- ```seaborn            == 0.13.2```
+- ```torch              == 2.8.0+cu126```
+- ```torchvision        == 0.23.0+cu126```
+
+## Data Preporation
+
+## Model Architecture
+
+## Training
+
+## Evaluation
+
+## Improvements and Future Directions
+
+## References
+
