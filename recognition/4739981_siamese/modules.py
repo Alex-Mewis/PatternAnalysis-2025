@@ -12,10 +12,6 @@ class SiameseNetwork(nn.Module):
 
         resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
         self._backbone = nn.Sequential(*list(resnet.children())[:-1])
-        
-        # unfreeze all parameters in the resNet backbone.
-        for param in self._backbone.parameters():
-            param.requires_grad = True
 
         self.name = 'siamese'
 
