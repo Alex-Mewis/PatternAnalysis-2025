@@ -259,13 +259,8 @@ if __name__ == "__main__":
 
     get_data_stats(labels_filepath)
 
-    no_transforms = v2.Compose([
-    v2.ToImage(),
-    v2.ToDtype(torch.float32, scale=True),
-    ])
-
     dataset = ISICImageDataset(image_dir, labels_filepath)
-    dataset.set_transforms(no_transforms)
+    dataset.set_transforms(v2.Compose(VALIDATION_TRANSFORMS.transforms[:-1])) # remove normalisation
 
     images = [dataset[i][0].cpu().numpy() for i in range(9)]
     images = [np.transpose(img, axes=(1, 2, 0)) for img in images]
@@ -273,7 +268,7 @@ if __name__ == "__main__":
     plot_image_showcase(images, 'base_images_showcase', "Base Images")
 
 
-    dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1]))
+    dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1])) # remove normalisation
 
     images = [dataset[i][0].cpu().numpy() for i in range(9)]
     images = [np.transpose(img, axes=(1, 2, 0)) for img in images]

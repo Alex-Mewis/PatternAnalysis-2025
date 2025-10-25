@@ -32,13 +32,14 @@ if not os.path.exists(plots_dir): os.mkdir(plots_dir)
 if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
 #### DATA SHOWCASE PLOTS ###############################################################
-def plot_image_showcase(image_matricies: list[np.ndarray], filename: str, title: str = None) -> None:
+def plot_image_showcase(image_matricies: list[np.ndarray], filename: str, title: str = None, cams: list[np.ndarray] = None) -> None:
     
     assert len(image_matricies) == 9
     
     fig, axes = plt.subplots(3, 3, figsize=(9, 9))
     for i, img_matrix in enumerate(image_matricies):
         axes[i%3, i//3].imshow(img_matrix)
+        if cams is not None: axes[i%3, i//3].imshow(cams[i], cmap='plasma', alpha=0.5)
         axes[i%3, i//3].set_xticks([])
         axes[i%3, i//3].set_yticks([])
 
