@@ -85,6 +85,7 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     tsne_output = tsne.fit_transform(features)
 
     benign_tsne = tsne_output[labels == 0, :]
+    malignant_tsne = tsne_output[labels == 1, :]
 
     plt.scatter(
         benign_tsne[:,0],
