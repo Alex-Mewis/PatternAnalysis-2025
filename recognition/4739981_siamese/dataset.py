@@ -19,19 +19,24 @@ random.seed(42)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #### CONFIGURABLES ###########################################################
-IMAGE_TRANSFORMS = v2.Compose([
+TRAIN_IMAGE_TRANSFORMS = v2.Compose([
     v2.RandomRotation(10),
     v2.RandomVerticalFlip(),
     v2.RandomHorizontalFlip(),
     v2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
+    v2.RandomChoice([
+        v2.GaussianBlur(kernel_size=5, sigma=0.5),
+        v2.ElasticTransform(alpha=10),
+    ]),
     v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-BASIC_TRANSFORMS = v2.Compose([
+VALIDATION_TRANSFORMS = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
+    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 def progress_bar_animation(progress: float, num_boxes:int = 66, completed_symbol:str = '∎', waiting_symbol:str = '□') -> None:
@@ -107,10 +112,9 @@ class ISICImageDataset(Dataset):
     """
     def __init__(self, image_dir: str, labels_path: str,
                  shortcut_positive_images: np.ndarray | None = None,
-                 shortcut_negative_images: np.ndarray | None = None,
-                 transforms = IMAGE_TRANSFORMS) -> None:
+                 shortcut_negative_images: np.ndarray | None = None) -> None:
 
-        self._transforms = transforms
+        self._transforms =  VALIDATION_TRANSFORMS
 
         if shortcut_positive_images is not None and shortcut_negative_images is not None:
             self._positive_images = shortcut_positive_images
@@ -156,6 +160,10 @@ class ISICImageDataset(Dataset):
     def __len__(self) -> int:
         return len(self._negative_images) + len(self._positive_images) 
     
+    def set_training_data_transforms(self) -> None:
+        self._transforms = TRAIN_IMAGE_TRANSFORMS
+        return None
+
     def force_even_data(self) -> None:
 
         # increase the positive images to be the same size as the negative

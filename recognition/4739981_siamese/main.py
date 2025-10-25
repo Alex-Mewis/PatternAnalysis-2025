@@ -15,7 +15,7 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_SIAMESE = True 
+LOAD_MOST_RECENT_SIAMESE = False 
 LOAD_MOST_RECENT_CLASSIFIER = False 
 
 TRAIN_SIAMESE = True 
@@ -40,7 +40,8 @@ def main() -> None:
     validation_dataset, test_dataset = hidden_dataset.split(p=0.5)
     
     train_dataset.force_even_data()
-    validation_dataset.force_even_data()
+    train_dataset.set_training_data_transforms()
+    # validation_dataset.force_even_data()
     
     train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
     validation_dataloader = validation_dataset.to_DataLoader(batch_size=BATCH_SIZE)
