@@ -15,10 +15,10 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_SIAMESE = True 
+LOAD_MOST_RECENT_SIAMESE = False 
 LOAD_MOST_RECENT_CLASSIFIER = False 
 
-TRAIN_SIAMESE = False 
+TRAIN_SIAMESE = True 
 TRAIN_CLASSIFIER = True  
 TEST_ACCURACY = True 
 
