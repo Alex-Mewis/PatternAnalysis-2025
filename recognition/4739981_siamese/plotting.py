@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import torch
 from sklearn.manifold import TSNE
+from sklearn.metrics import roc_curve, roc_auc_score
 
 import matplotlib
 from matplotlib.colors import LinearSegmentedColormap
@@ -95,6 +96,43 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     plt.close()
     return None
 
+def plot_classifer_traning_metrics(training_metrics: dict, validation_metrics: dict) -> None:
+    """
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4))    
+
+    epochs = range(1, 1+len(training_metrics['loss'])) 
+
+    axes[0].set_title("Classifier Traning & Validation Loss")
+    axes[0].plot(epochs, training_metrics['loss'], label='Training')
+    axes[0].plot(epochs, validation_metrics['loss'], label='Validation')
+    axes[0].set_ylabel("Loss")
+
+    axes[1].set_title("Classifier Traning & Validation Accuracy")
+    axes[1].plot(epochs, training_metrics['acc'], label='Training')
+    axes[1].plot(epochs, validation_metrics['acc'], label='Validation')
+    axes[1].set_ylabel("Accuracy")
+
+    axes[2].set_title("Classifier Traning & Validation AUC-ROC")
+    axes[2].plot(epochs, training_metrics['auc-roc'], label='Training')
+    axes[2].plot(epochs, validation_metrics['auc-roc'], label='Validation')
+    axes[2].set_ylabel("AUC-ROC")
+    
+    for i in range(3):
+        axes[i].set_xlabel("Epoch")
+        axes[i].set_facecolor(mocha_colours.mantle.hex)
+        axes[i].legend()
+        axes[i].grid()
+
+    plt.tight_layout()
+
+    outpath = os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")
+    plt.savefig(outpath)
+    print(f"Saved: {outpath}")
+
+    plt.close()
+    return None
+
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     """
     """
@@ -114,4 +152,28 @@ def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
 
     print(f"Saved: {outpath}")
     plt.close()
+    return None
+
+def plot_roc_curve(probabilities: np.ndarray, labels: np.ndarray) -> None:
+    """
+    """
+
+    fpr, tpr, _ = roc_curve(labels, probabilities)
+    score = roc_auc_score(labels, probabilities)
+
+    plt.plot(fpr, tpr, label=f"ROC curve (AUC = {score:.2f})")
+    plt.plot([0, 1], [0, 1], linestyle='--')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver Operating Characteristic (ROC) Curve")
+    plt.grid()
+    plt.legend()
+    plt.gca().set_facecolor(mocha_colours.mantle.hex)
+
+    outpath = os.path.join(plots_dir, "roc_curve.png")
+    plt.savefig(outpath)
+    
+    print(f"Saved {outpath}")
+    plt.close()
+
     return None

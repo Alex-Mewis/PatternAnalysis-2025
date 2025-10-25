@@ -7,7 +7,7 @@ import torch
 from dataset import ISICImageDataset
 from modules import SiameseNetwork, Classifier
 from train import train_model, train_classifer, save_model, load_model, test_accuracy
-from plotting import plot_confusion_matrix
+from plotting import plot_confusion_matrix, plot_roc_curve
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -15,14 +15,14 @@ if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS ############################################################################
 ## CONTROL FLOW ############################################
-LOAD_MOST_RECENT_SIAMESE = False 
+LOAD_MOST_RECENT_SIAMESE = True 
 LOAD_MOST_RECENT_CLASSIFIER = False 
 
-TRAIN_SIAMESE = True 
-TRAIN_CLASSIFIER = False 
-TEST_ACCURACY = False 
+TRAIN_SIAMESE = False 
+TRAIN_CLASSIFIER = True  
+TEST_ACCURACY = True 
 
-MAKE_PREDICTION_PLOTS = False 
+MAKE_PREDICTION_PLOTS = True 
 
 ## DATASETS ################################################
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
@@ -63,10 +63,11 @@ def main() -> None:
         save_model(classifier)
 
     if TEST_ACCURACY:
-        predictions, labels = test_accuracy(siamese, classifier, test_dataloader)
+        labels, probabilities, predictions = test_accuracy(siamese, classifier, test_dataloader)
 
     if MAKE_PREDICTION_PLOTS:
         plot_confusion_matrix(predictions, labels)
+        plot_roc_curve(probabilities, labels) 
 
 
 if __name__ == "__main__":

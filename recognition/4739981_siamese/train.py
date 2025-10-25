@@ -10,9 +10,11 @@ from torch import nn
 from torch.nn import TripletMarginLoss, CrossEntropyLoss
 from torch.utils.data import DataLoader
 
+from sklearn.metrics import roc_auc_score, accuracy_score 
+
 from modules import SiameseNetwork, Classifier
 from configs import siamese_config, classifier_config
-from plotting import plot_loss, plot_tsne 
+from plotting import plot_loss, plot_tsne, plot_classifer_traning_metrics
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -162,9 +164,10 @@ def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loade
     optimizer = torch.optim.Adam(classifier.parameters(), lr=classifier_config.learning_rate)
 
     siamese.eval()
-    
-    training_epoch_losses = list()
-    validation_epoch_losses = list()
+
+     
+    training_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
+    validation_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
 
     print("#### STARTED TRANING CLASSIFIER ###################################################")    
     start_time = time.time()
@@ -173,39 +176,59 @@ def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loade
         # train.
         classifier.train()
         training_epoch_loss = 0
+        epoch_probs  = list()
+        epoch_preds  = list()
+        epoch_labels = list()
         for img, label in train_loader: 
             img, label = img.to(device), label.to(device)
 
             optimizer.zero_grad()
 
             latent_vector = siamese.forward_once(img)
-            out = classifier(latent_vector)
+            probs = classifier(latent_vector)
+            preds = torch.round(probs) 
 
-            loss = cross_entropy_loss(out, label)
+            loss = cross_entropy_loss(probs, label)
+
             loss.backward()
             optimizer.step()
 
             training_epoch_loss += loss.item()
+            epoch_probs.extend(probs.detach().cpu().numpy())
+            epoch_preds.extend(preds.detach().cpu().numpy())
+            epoch_labels.extend(label.cpu().numpy())
 
         training_avg_loss = training_epoch_loss / len(train_loader)
-        training_epoch_losses.append(training_avg_loss)
+        training_metrics['loss'].append(training_avg_loss)
+        training_metrics['acc'].append(accuracy_score(epoch_labels, epoch_preds))
+        training_metrics['auc-roc'].append(roc_auc_score(epoch_labels, epoch_probs))
 
         # validate.
         classifier.eval()
         validation_epoch_loss = 0
+        epoch_probs  = list()
+        epoch_preds  = list()
+        epoch_labels = list()
         with torch.no_grad():
             for img, label in validation_loader:
                 img, label = img.to(device), label.to(device)
 
                 latent_vector = siamese.forward_once(img)
-                out = classifier(latent_vector)
+                probs = classifier(latent_vector)
+                preds = torch.round(probs) 
 
-                loss = cross_entropy_loss(out, label)
+
+                loss = cross_entropy_loss(probs, label)
 
                 validation_epoch_loss += loss.item()
-
+                epoch_probs.extend(probs.detach().cpu().numpy())
+                epoch_preds.extend(preds.detach().cpu().numpy())
+                epoch_labels.extend(label.cpu().numpy())
+        
         validation_avg_loss = validation_epoch_loss / len(validation_loader)
-        validation_epoch_losses.append(validation_avg_loss)        
+        validation_metrics['loss'].append(validation_avg_loss)
+        validation_metrics['acc'].append(accuracy_score(epoch_labels, epoch_preds))
+        validation_metrics['auc-roc'].append(roc_auc_score(epoch_labels, epoch_probs))
 
         print(f"Epoch [{epoch}/{classifier_config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
 
@@ -214,7 +237,7 @@ def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loade
     elapsed_time = time.time() - start_time
     print(f"Traning Took: {elapsed_time:.3f}s or {(elapsed_time/60):.3f}mins")
 
-    plot_loss(training_epoch_losses, validation_epoch_losses, "Binary Classifier")
+    plot_classifer_traning_metrics(training_metrics, validation_metrics)
 
     return None
 
@@ -225,8 +248,10 @@ def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: 
     siamese.eval()
     classifier.eval()
 
-    total_predictions = np.zeros(len(test_loader.dataset))
-    total_labels = np.zeros(len(test_loader.dataset)) 
+    all_labels = np.zeros(len(test_loader.dataset)) 
+    all_probs = np.zeros(len(test_loader.dataset))
+    all_preds = np.zeros(len(test_loader.dataset))
+    
     n = 0
 
     print("#### STARTED TESTING ACCURACY #####################################################")  
@@ -239,18 +264,21 @@ def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: 
             batch_size = len(labels)
 
             latent_vector = siamese.forward_once(imgs)
-            out = classifier(latent_vector)
-            pred = torch.round(out)
+            probs = classifier(latent_vector)
+            preds = torch.round(probs)
 
-            total_predictions[n:n+batch_size] = pred.cpu().numpy() 
-            total_labels[n:n+batch_size] = labels.cpu().numpy()
+            all_labels[n:n+batch_size] = labels.cpu().numpy()
+            all_probs[n:n+batch_size] = probs.cpu().numpy()
+            all_preds[n:n+batch_size] = preds.cpu().numpy()
+            
             n += batch_size 
 
-            total += len(out)
-            num_correct += (pred == labels).sum().item()
+            total += len(probs)
+            num_correct += (preds == labels).sum().item()
         
-        print(f"Testing Accuracy: {(100*num_correct/total):.2f}%")
+    print(f"Testing Accuracy: {(100*num_correct/total):.2f}%")
+    print(f"AUC-ROC score   : {roc_auc_score(all_labels, all_probs):.2f}")
 
     print("#### FINISHED TESTING ACCURACY ####################################################")  
 
-    return total_predictions, total_labels 
+    return all_labels, all_probs, all_preds 
