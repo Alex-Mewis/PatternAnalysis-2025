@@ -4,6 +4,7 @@ Contains all of the relavent functions for making plots.
 import os
 from datetime import datetime
 import numpy as np
+
 import torch
 from sklearn.manifold import TSNE
 from sklearn.metrics import roc_curve, roc_auc_score
@@ -30,7 +31,29 @@ train_plots_dir = os.path.join(plots_dir, "train")
 if not os.path.exists(plots_dir): os.mkdir(plots_dir)
 if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
-#### FUNCTIONS ####################################################################
+#### DATA SHOWCASE PLOTS ###############################################################
+def plot_image_showcase(image_matricies: list[np.ndarray], filename: str, title: str = None) -> None:
+    
+    assert len(image_matricies) == 9
+    
+    fig, axes = plt.subplots(3, 3, figsize=(9, 9))
+    for i, img_matrix in enumerate(image_matricies):
+        axes[i%3, i//3].imshow(img_matrix)
+        axes[i%3, i//3].set_xticks([])
+        axes[i%3, i//3].set_yticks([])
+
+    if title is not None: fig.suptitle(title, fontsize=20)
+    plt.tight_layout()
+
+    outpath = os.path.join(plots_dir, f"{filename}.png")
+    plt.savefig(outpath)
+    print(f"Saved: {outpath}") 
+
+    plt.close()
+    return None
+
+
+#### TRAINING PLOTS ####################################################################
 def plot_loss(training_loss: list[float], validation_loss: list[float], model_title: str) -> None:
     """
     """
@@ -61,7 +84,6 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     tsne_output = tsne.fit_transform(features)
 
     benign_tsne = tsne_output[labels == 0, :]
-    malignant_tsne = tsne_output[labels == 1, :]
 
     plt.scatter(
         benign_tsne[:,0],
@@ -133,6 +155,8 @@ def plot_classifer_traning_metrics(training_metrics: dict, validation_metrics: d
     plt.close()
     return None
 
+
+#### EVALUATION PLOTS ##################################################################
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     """
     """

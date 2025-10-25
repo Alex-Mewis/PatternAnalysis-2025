@@ -12,7 +12,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
-PERCENTAGE_OF_DATA_TO_LOAD = 1.0    
+from plotting import plot_image_showcase
+
+PERCENTAGE_OF_DATA_TO_LOAD = 0.05   
 THREADS_USE = 4
 
 random.seed(42)
@@ -163,6 +165,10 @@ class ISICImageDataset(Dataset):
     def set_training_data_transforms(self) -> None:
         self._transforms = TRAIN_IMAGE_TRANSFORMS
         return None
+    
+    def set_transforms(self, transforms) -> None:
+        self._transforms = transforms 
+        return None
 
     def force_even_data(self) -> None:
 
@@ -248,4 +254,30 @@ class ISICImageDataset(Dataset):
 
 
 if __name__ == "__main__":
-    get_data_stats('./data/ISIC_2020_Training_GroundTruth.csv')
+    image_dir = './data/images/'
+    labels_filepath = './data/ISIC_2020_Training_GroundTruth.csv'
+
+    get_data_stats(labels_filepath)
+
+    no_transforms = v2.Compose([
+    v2.ToImage(),
+    v2.ToDtype(torch.float32, scale=True),
+    ])
+
+    dataset = ISICImageDataset(image_dir, labels_filepath)
+    dataset.set_transforms(no_transforms)
+
+    images = [dataset[i][0].cpu().numpy() for i in range(9)]
+    images = [np.transpose(img, axes=(1, 2, 0)) for img in images]
+    
+    plot_image_showcase(images, 'base_images_showcase', "Base Images")
+
+
+    dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1]))
+
+    images = [dataset[i][0].cpu().numpy() for i in range(9)]
+    images = [np.transpose(img, axes=(1, 2, 0)) for img in images]
+    
+    plot_image_showcase(images, 'transformed_images_showcase', "Transformed Images")
+
+
