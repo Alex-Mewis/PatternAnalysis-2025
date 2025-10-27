@@ -113,7 +113,7 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     plt.title(f"TSNE Scatter on {dataset} dataset")
     plt.gca().set_facecolor(mocha_colours.mantle.hex)
     
-    outpath = os.path.join(plots_dir, f"tsne_scatter_{dataset.lower()}.png")
+    outpath = os.path.join(train_plots_dir, f"tsne_scatter_{dataset.lower()}_{datetime.now().timestamp()}.png")
     plt.savefig(outpath)
     print(f"Saved: {outpath}")
 
