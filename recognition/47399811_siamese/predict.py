@@ -2,7 +2,6 @@
 import numpy as np
 import torch
 from pytorch_grad_cam import GradCAM
-from pytorch_grad_cam.utils.image import show_cam_on_image
 
 from modules import SiameseNetwork
 from train import load_model
@@ -14,7 +13,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cpu': print("Warning using CPU!")
 
 def grad_cam(siamese: SiameseNetwork, images: list):
-    target_layers = [siamese.final_layer]
+    target_layers = [siamese.final_convolution_layer]
 
     with GradCAM(model=siamese, target_layers=target_layers) as cam:
         cams = cam(images, targets=None)

@@ -18,8 +18,8 @@ class SiameseNetwork(nn.Module):
         return None
     
     @property
-    def final_layer(self) -> nn.Module:
-        return list(self._backbone.children())[-2] # skip the average pool layer
+    def final_convolution_layer(self) -> nn.Module:
+        return list(self._backbone.children())[-3] # skip the AvgPool2d & batchNorm2d layers
     
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
         out  = self._backbone(x)
