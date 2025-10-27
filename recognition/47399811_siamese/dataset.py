@@ -25,13 +25,9 @@ TRAIN_IMAGE_TRANSFORMS = v2.Compose([
     v2.RandomRotation(10),
     v2.RandomVerticalFlip(),
     v2.RandomHorizontalFlip(),
-    v2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    v2.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
-    v2.RandomChoice([
-        v2.GaussianBlur(kernel_size=5, sigma=0.5),
-        v2.ElasticTransform(alpha=10),
-    ]),
     v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 

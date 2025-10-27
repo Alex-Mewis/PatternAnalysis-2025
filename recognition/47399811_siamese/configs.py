@@ -10,11 +10,11 @@ class ModelConfig:
 
 
 siamese_config = ModelConfig(
-    epochs=2,
-    learning_rate=1e-3,
+    epochs=20,
+    learning_rate=0.05,
 )
 
 classifier_config = ModelConfig(
-    epochs=2,
+    epochs=10,
     learning_rate=1e-3,
 )
