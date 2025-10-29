@@ -32,7 +32,9 @@ if not os.path.exists(plots_dir): os.mkdir(plots_dir)
 if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
 #### DATA SHOWCASE PLOTS ###############################################################
-def plot_image_showcase(image_matricies: list[np.ndarray], filename: str, title: str = None, cams: list[np.ndarray] = None) -> None:
+def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], filename: str,
+                        title: str | None = None, cams: list[np.ndarray] | None = None,
+                        captions: list[str] | None = None) -> None:
     
     assert len(image_matricies) == 9
     
@@ -42,6 +44,7 @@ def plot_image_showcase(image_matricies: list[np.ndarray], filename: str, title:
         if cams is not None: axes[i%3, i//3].imshow(cams[i], cmap='plasma', alpha=0.5)
         axes[i%3, i//3].set_xticks([])
         axes[i%3, i//3].set_yticks([])
+        axes[i%3, i//3].set_title("Malignant" if labels[i] else "Benign")
 
     if title is not None: fig.suptitle(title, fontsize=20)
     plt.tight_layout()

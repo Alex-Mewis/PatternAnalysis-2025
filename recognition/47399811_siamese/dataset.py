@@ -13,8 +13,9 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
 from plotting import plot_image_showcase
+from configs import BATCH_SIZE
 
-PERCENTAGE_OF_DATA_TO_LOAD = 0.05   
+PERCENTAGE_OF_DATA_TO_LOAD = 1.0 
 THREADS_USE = 4
 
 random.seed(42)
@@ -246,7 +247,28 @@ class ISICImageDataset(Dataset):
 
     def to_DataLoader(self, **kwargs) -> DataLoader:
         return DataLoader(self, **kwargs)
+
+
+def get_train_validation_test_dataloaders(images_dir: str | None = None, labels_filepath: str | None = None) -> tuple[DataLoader, DataLoader, DataLoader]:
+
+    if images_dir is None: images_dir = "./data/images/" 
+    if labels_filepath is None: labels_filepath = './data/ISIC_2020_Training_GroundTruth.csv'
+
+
+    dataset = ISICImageDataset(images_dir, labels_filepath)
+
+    train_dataset, hidden_dataset = dataset.split(p=0.7)   
+    validation_dataset, test_dataset = hidden_dataset.split(p=0.5)
     
+    train_dataset.force_even_data()
+    train_dataset.set_training_data_transforms()
+    # validation_dataset.force_even_data()
+    
+    train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
+    validation_dataloader = validation_dataset.to_DataLoader(batch_size=BATCH_SIZE)
+    test_dataloader = test_dataset.to_DataLoader(batch_size=BATCH_SIZE)
+
+    return train_dataloader, validation_dataloader, test_dataloader
 
 
 if __name__ == "__main__":
@@ -257,18 +279,23 @@ if __name__ == "__main__":
 
     dataset = ISICImageDataset(image_dir, labels_filepath)
     dataset.set_transforms(v2.Compose(VALIDATION_TRANSFORMS.transforms[:-1])) # remove normalisation
+    dataset.set_triple_iter(False)
+    dataloader = dataset.to_DataLoader(batch_size=9)
 
-    images = [dataset[i][0].cpu().numpy() for i in range(9)]
-    images = [np.transpose(img, axes=(1, 2, 0)) for img in images]
+    for images, labels in dataloader:
+        images = [np.transpose(img.cpu().numpy(), axes=(1,2,0)) for img in images]
+        labels = labels.cpu().numpy()
+        break
     
-    plot_image_showcase(images, 'base_images_showcase', "Base Images")
+    plot_image_showcase(images, labels, 'base_images_showcase', "Base Images")
 
+    dataloader.dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1])) # remove normalisation
 
-    dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1])) # remove normalisation
-
-    images = [dataset[i][0].cpu().numpy() for i in range(9)]
-    images = [np.transpose(img, axes=(1, 2, 0)) for img in images]
+    for images, labels in dataloader:
+        images = [np.transpose(img.cpu().numpy(), axes=(1,2,0)) for img in images]
+        labels = labels.cpu().numpy()
+        break
     
-    plot_image_showcase(images, 'transformed_images_showcase', "Transformed Images")
+    plot_image_showcase(images, labels, 'transformed_images_showcase', "Transformed Images")
 
 
