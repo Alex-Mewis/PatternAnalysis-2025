@@ -11,6 +11,6 @@ class ModelConfig:
 BATCH_SIZE = 32
 
 config = ModelConfig(
-    epochs=25,
+    epochs=16,
     learning_rate=0.01,
 )

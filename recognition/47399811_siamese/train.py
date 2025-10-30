@@ -27,7 +27,7 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
     triplet_loss = TripletMarginLoss().to(device)
     cross_entropy_loss = CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(siamese.parameters(), lr=config.learning_rate)
-    scheduler = CosineAnnealingLR(optimizer, T_max=config.epochs, eta_min=1e-7) 
+    scheduler = CosineAnnealingLR(optimizer, T_max=25, eta_min=1e-7) 
 
     training_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
     validation_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
