@@ -1,6 +1,6 @@
 # Siamese Network to Classify Melanoma on Lesions (ISIC 2020)
 ## Project Description
-For this project a Siamese model on the _ISIC 2020 Challenge dataset_  which aims to classify lesions as either benign or malignant. The goal is to achieve an accuracy of around 80% on the test dataset. The developed model will help dermatologists, who currently have to look through the lesions one by one, find early signs of skin cancer and assist with diagnosis.
+For this project a Siamese model on the _ISIC 2020 Challenge dataset_  which aims to classify lesions as either benign or malignant was developed. The goal of the model is to achieve an accuracy of around 80% on the test dataset. The developed model will help dermatologists, who currently have to look through the lesions one by one, find early signs of skin cancer and assist with diagnosis.
 
 
 ## Dataset Description
@@ -59,7 +59,7 @@ _All of the data loading, splitting, oversampling, batching and augumentation ar
 
 The images in ```data/images``` are first split into benign or malignant (based on the label in ```data/ISIC_2020_TrainingGroundTruth.csv```). Then the dataset is split into the following 3 groups:
 - __Train Set__: 
-  * 75% of malignant images and 75% of benign images.
+  * 70% of malignant images and 70% of benign images.
   * Used to train the model.
 - __Validation Set__:
   * 15% of malignant images and 15% of benign images.
@@ -68,7 +68,7 @@ The images in ```data/images``` are first split into benign or malignant (based 
   * 15% of malignant images and 15% of benign images.
   * Used to evaluate the models final performance on an unseen dataset.
 
-The original dataset has a large class imbalance with very little malignant images compared to benign images (1.8% to 98.2%). So a major focus was on the how to counter act this class imbalance because otherwise our model would end up not predicting any malignant cases which would make the model useless. So to counter act the class imbalance the minority class (malignant) was oversampled in the training data so there was 50% of each class. Furthermore, when iterating over the dataset in training the images would be batched with 50% of each class. 
+The original dataset has a large class imbalance with very little malignant images compared to benign images (1.8% to 98.2%). So a major focus was on the how to counter act this class imbalance because otherwise our model would end up not predicting any malignant cases which would make it useless. So to counter act the class imbalance the minority class (malignant) was oversampled in the training data so there was 50% of each class. Furthermore, when iterating over the dataset in training the images would be batched with 50% of each class. 
 
 To reduce over fitting multiple augmentations were applied to the images when training. The augmentations used in training are as follows:
 -  ```RandomRotation(10)```: Rotates the image $\theta$ degrees where $\theta \in [0, 10]$. 
@@ -76,7 +76,9 @@ To reduce over fitting multiple augmentations were applied to the images when tr
 - ```RandomHorizontalFlip()```: Flips the image horizontally with a 50% probability.
 - ```ColorJitter(...)```: adjusts the brightness, contrast, saturation and hue of the image.
 
-Additionally the pixel values of the images in training, validation and testing where normalised using ```Normalize(...)```. Here are some example images after the training transformations were applied:
+Additionally the pixel values of the images in training, validation and testing where normalised using ```Normalize(...)```. 
+
+Here are some example images after the training transformations were applied:
 <div style="text-align: center;">
 <img src="_readme_figures/transformed_images_showcase.png" alt="[Transformed Image Plot]" width="45%"/>
 </div>
@@ -100,7 +102,7 @@ For this project a slightly modified ```restnet18``` was used for the CNN backbo
 </div>
 
 
-For this project the last fully connected layer and softmax have been removed, as we are only need the CNN part of the model. As can be seen above this model will output a 512 dimensional latent vector representation of the image.
+For this project the last fully connected layer and softmax have been removed, as only the CNN part of the model is needed. As can be seen above this model will output a 512 dimensional latent vector representation of an image.
 
 The binary classifier consists of 4 fully connected layers of size: $512 \to 256 \to 128 \to 64 \to 2$ with a ```RelU``` activation function and ```Dropout(0.5)``` between each fully connected layer. The final layer output has two values; the first being the models confidence that the image is benign (```label==0```) and the second is the models confidence the image is malignant (```label==1```). The models confidence in each label are used to generate its predictions. The dropout layers in the classifier help to reduce over fitting in the model by randomly turning off 50% of the nodes in each layer.
 
@@ -118,7 +120,7 @@ where:
 
 For this project we have also chosen $\text{margin} = 1$ (which is a common choice).
 
-The goal of the binary classifier is to correctly classify the images from their latent vectors as either benign or malignant. So to achieve this we use the ```CrossEntropyLoss``` which measures how close the models probability distribution for the labels is to the true labels. To define the Cross Entropy Loss we must first define the models probability distribution from its confidence output in the final layer of the classifier. This can be achieved using the $\text{softmax}$ function, that is, if we let $(c\_0, c\_1)$ be the classifiers output (the models confidence in benign and malignant respectfully) then we can define the classifiers probability of the image being benign $p\_0$ or malignant $p\_1$ as follows:
+The goal of the binary classifier is to correctly classify the images from their latent vectors as either benign or malignant. So to achieve this ```CrossEntropyLoss``` is used, cross entropy loss measures how close the models probability distribution for the labels is to the true labels. To define the Cross Entropy Loss we must first define the models probability distribution from its confidence output in the final layer of the classifier. This can be achieved using the $\text{softmax}$ function, that is, if we let $(c\_0, c\_1)$ be the classifiers output (the models confidence in benign and malignant respectfully) then we can define the classifiers probability of the image being benign $p\_0$ or malignant $p\_1$ as follows:
 
 $$
 p\_0:=\text{softmax}(c\_0) = \frac{e^{c\_0}}{e^{c\_0}+e^{c\_1}}, \hspace{1cm} p\_1 := \text{softmax}(c\_1) = \frac{e^{c\_1}}{e^{c\_0} + e^{c\_1}}.
@@ -143,7 +145,7 @@ py train.py
 The following hyperparameters have been used to train the model:
 - ```batch_size=32```
 - ```epochs=16```
-- ```learning_rate=0.01```, a learning rate scheduler, ```CosineAnnealingLR```, was used with ```T_max=25, eta_min=1e-7```
+- ```learning_rate=0.01```, with a learning rate scheduler, ```CosineAnnealingLR```, set to ```T_max=25, eta_min=1e-7```
   - Using a learning rate scheduler helps the model to explore a little more with a higher learning rate initially while still being able to converge and fine tune at the higher epochs.
 
 
@@ -182,7 +184,7 @@ To evaluate the reasonableness of the CNN backbone it is useful to know what the
 **Analysis**:
 - The areas in the image where the overlay is brightest are where the CNN is looking at the most when extracting its features.
 - The model, for the most part, is seen to be looking at the lesions. This is good as this should be what is used to distinguish one image as either benign or malignant.
-- While sometimes model is not able to highlight the lesions this is potentially a sign the model was overfit or insufficiently trained or complex to pick up every lesion. 
+- While sometimes model is not able to highlight the lesions this is potentially a sign the model was overfit, insufficiently trained or too simple to pick up on every lesion. 
 - Clearly the model is not _cheating_ as it is not highlighting some obscure part of every single image.
 
 The confusion matrix of the models predictions on the hidden test dataset is shown below:
@@ -194,17 +196,17 @@ The confusion matrix of the models predictions on the hidden test dataset is sho
 - Overall accuracy $=\frac{75+4116}{75+4116+766+13} = 84.3$%.
 - Accuracy on malignant data $=\frac{75}{75+13} = 85.2$%.
 - Accuracy on benign data $=\frac{4116}{4116+766} = 84.3$%.
-- Therefore the model has met the accuracy requirement of around $80$% as it is getting higher overall and on each class (malignant and benign).
-- The model has a very similar accuracy on both malignant and benign models indicating the model was well balanced and the natural imbalance in the data set was successfully counter acted.
+- Therefore the model has met the accuracy requirement of around $80$% as it is getting higher than $80$% overall and on each class.
+- The model has a very similar accuracy on both malignant and benign images indicating the model was well balanced and the natural imbalance in the data set was successfully counter acted.
 
-The models ROC curve is shown below:
+The models ROC curve on the hidden test dataset is shown below:
 <div style="text-align: center;">
 <img src="_readme_figures/roc_curve.png" alt="[Base Image Plot]" width="45%"/>
 </div>
 
 **Analysis**:
 - The AUC-ROC score measures the models flexibility under various thresholds for its predictions. So the higher the AUC-ROC (with a max of 1) the more confident your model is in its predictions. 
-- $AUC= 0.91$ shows the model has a high level of confidence on its predictions on the test data. Which is what we want because the models predictions will then likely be more stable on unknown data.
+- $AUC= 0.91$ shows the model has a high level of confidence on its predictions on the test data. Which is what we want because the models predictions will then likely be more stable and robust on unknown data.
 
 Some sample model predictions are shown below:
 <div style="text-align: center;">
@@ -217,7 +219,7 @@ Some sample model predictions are shown below:
 - This means the incorrect predictions might be more likely caused by the CNN backbone not being able to highlight the lesions rather than the binary classifier.
 
 ### Summary
-Overall the model was able to perform very well and hit the roughly $80$% requirement set on the test data. The models predictions are accuracy achieving $84.4$% on all test images and confident (and thus more robust) as shown by the high $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
+Overall the model was able to perform very well and hit the roughly $80$% requirement set on the test data. The models predictions are accurate on the test data, having a $84.4$% accuracy, and is very confident/robust as shown by the high $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
 
 ## Improvements and Future Directions
 - **Add meta-data**: In the _ISIC 2020 Kaggle Challenge_ some additional meta-data was released along with the images and labels. These include the ```sex``` and ```age_approx``` of the patient. A model which also incorporates this meta-data into its classifications could be developed.
@@ -233,4 +235,5 @@ Overall the model was able to perform very well and hit the roughly $80$% requir
 - https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
 - https://catppuccin.com/
 - https://www.geeksforgeeks.org/machine-learning/auc-roc-curve/
-
+- https://docs.pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html
+- https://www.geeksforgeeks.org/deep-learning/binary-cross-entropy-log-loss-for-binary-classification/
