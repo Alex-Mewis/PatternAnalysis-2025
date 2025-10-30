@@ -13,6 +13,7 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 from modules import SiameseNetwork, save_model 
 from configs import config 
 from plotting import plot_loss, plot_tsne 
+from dataset import get_train_validation_test_dataloaders
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -176,3 +177,12 @@ def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.nd
     print("#### FINISHED TESTING ACCURACY ####################################################")  
 
     return all_labels, all_probs, all_preds 
+
+
+if __name__ == "__main__":
+    
+    train_dataloader, validation_dataloader, _ = get_train_validation_test_dataloaders()
+    siamese = SiameseNetwork().to(device)
+    train_model(siamese, train_dataloader, validation_dataloader)
+    save_model(siamese)
+     

@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score
 
 from modules import SiameseNetwork, load_model
 from dataset import ISICImageDataset, get_train_validation_test_dataloaders
-from plotting import plot_image_showcase
+from plotting import plot_image_showcase, plot_confusion_matrix, plot_roc_curve
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -76,35 +76,34 @@ def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.nd
 if __name__ == "__main__":
     model = load_model().to(device)
 
-    image_dir = './data/images/'
-    labels_filepath = './data/ISIC_2020_Training_GroundTruth.csv'
-
     _, _, test_dataloader = get_train_validation_test_dataloaders()
-    test_accuracy(model, test_dataloader)
 
-    dataset = ISICImageDataset(image_dir, labels_filepath)
-    dataloader = dataset.to_DataLoader(batch_size=9)
-    dataloader.dataset.set_triple_iter(False)
-    
-    for images, labels in dataloader:
+    # test the model accuracy against the test data
+    labels, probabilities, predictions = test_accuracy(model, test_dataloader)
+    plot_confusion_matrix(predictions, labels)
+    plot_roc_curve(probabilities, labels)
+
+    # make the gradcam images
+    test_dataloader.dataset.set_triple_iter(False)
+    for images, labels in test_dataloader:
+        images, labels = images[:9], labels[:9]
         images.to(device)
         grad_cam(model, images, labels.cpu().numpy())
-        
         classifier_out = model.classify(images)
-
         break
 
     probs = torch.softmax(classifier_out, dim=1)
     preds = torch.argmax(classifier_out, dim=1)
 
+    # plot model image predictions showcase.
     captions = list()
     for i in range(9):
         pred = "Malignant" if preds[i] else "Benign"
         label = "Malignant" if labels[i] else "Benign"
         caption = f"Model: pred: {pred}\nwith probability {(100*probs[i][preds[i]]):.1f}%\nLabel: {label}" 
         captions.append((caption, pred==label))
-      
 
     images = np.transpose(images.cpu().numpy(), axes=(0, 2, 3, 1))
     images = [(img + np.abs(np.min(img)))/(np.max(img) + np.abs(np.min(img))) for img in images]
+
     plot_image_showcase(images, labels, 'predictions_image_showcase', "Image Predictions", captions=captions)
