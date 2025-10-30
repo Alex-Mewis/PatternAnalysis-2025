@@ -104,18 +104,18 @@ The binary classifier has been implemented using fulling connected layers. The m
 
 ### Loss Functions
 The goal of the CNN backbone is to make the latent vectors of two images of the same label as close together while the latent vectors of two image with different labels far apart. To achieve this the ```TripletMarginLoss``` was used to evaluate the networks performance. The triplet loss works by for each anchor image $\mathcal{A}$ in a batch we randomly choose a 2 other images $\mathcal{P}$ and $\mathcal{N}$ such that the label of $\mathcal{A}$ and $\mathcal{P}$ are the same while the label of $\mathcal{N}$ differs. Then we reward the latent vector repersentation of $\mathcal{A}$ and $\mathcal{P}$ being close together and $\mathcal{A}$ and $\mathcal{N}$ beign far apart. Formally the triplet loss function on a batch of size $N$ can be defined as follows,
-$$L(\bm{a}, \bm{p}, \bm{n}) := \max_{i\in\{1,\ldots,N\}} \{\underbrace{\|\bm{a}_i - \bm{p}_i \|}_{\text{distance between two images of the same label}} - \underbrace{\|\bm{a}_i - \bm{n}_i \|}_{\text{distance between two images of different labels}} + \text{margin}, 0\}.$$
+$$L(\textbf{a}, \textbf{p}, \textbf{n}) := \max_{i\in\{1,\ldots,N\}} \{\underbrace{\|\textbf{a}_i - 	\textbf{p}_i \|}_{\text{distance between two images of the same label}} - \underbrace{\|\textbf{a}_i - \textbf{n}_i \|}_{\text{distance between two images of different labels}} + \text{margin}, 0\}.$$
 where: 
-- $\bm{a} := (\bm{a}_1, \ldots, \bm{a}_N)$ where $\bm{a}_i$ is the latent vector output of the siamese network on the $i^{\text{th}}$ anchor image in the batch.
-- $\bm{p} := (\bm{p}_1, \ldots, \bm{p}_N)$ where $\bm{p}_i$ is the latent vector output of the siamese network on a chosen _positive_ image which has the same label as $\bm{a}_i$.
-- $\bm{n} := (\bm{n}_1, \ldots, \bm{n}_N)$ where $\bm{n}_i$ is the latent vector output of the siamese network on a chosen _negative_ image which has a different label than $\bm{a}_i$.
+- $	\textbf{a} := (\textbf{a}_1, \ldots, 	\textbf{a}_N)$ where $	\textbf{a}_i$ is the latent vector output of the siamese network on the $i^{\text{th}}$ anchor image in the batch.
+- $ \textbf{p} := (\textbf{p}_1, \ldots, 	\textbf{p}_N)$ where $	\textbf{p}_i$ is the latent vector output of the siamese network on a chosen _positive_ image which has the same label as $	\textbf{a}_i$.
+- $	\textbf{n} := (\textbf{n}_1, \ldots, 	\textbf{n}_N)$ where $	\textbf{n}_i$ is the latent vector output of the siamese network on a chosen _negative_ image which has a different label than $\textbf{a}_i$.
 
 For this project we have also chosen $\text{margin} = 1$ (which is a common value).
 
 
 The goal of the binary classifier is to correctly classify the images from their latent vectors as either benign or malignant. So to achieve this we use the ```CrossEntropyLoss``` which measures how close the models probability distribution for the labels is to the true labels. To define the Cross Entropy Loss we must first define the models probability distribution from its confidence output in the final layer of the classifier. This can be achieved using the $\text{softmax}$ function, that is, if we let $(c_0, c_1)$ be the classifiers output (the models confidence in benign and malignant respectfully) then we can define the classifiers probability of the image being benign $p_0$ or malignant $p_1$ as follows:
 $$p_0:=\text{softmax}(c_0) = \frac{e^{c_0}}{e^{c_0}+e^{c_1}}, \hspace{1cm} p_1 := \text{softmax}(c_1) = \frac{e^{c_1}}{e^{c_0} + e^{c_1}}.$$
-Then using these probabilities we define Cross Entropy Loss ($\text{CE}$) on a batch of size $N$ for true labels $\bm{y} = (y_1, \ldots, y_N)$ as,
+Then using these probabilities we define Cross Entropy Loss ($\text{CE}$) on a batch of size $N$ for true labels $	\textbf{y} = (y_1, \ldots, y_N)$ as,
 $$CE = -\frac{1}{N}\sum_{i=1}^N \left[y_i\cdot \log(p_{i,0}) +  (1-y_i)\log(p_{i,1}) \right],$$
 where $p_{i,\ell}$ is the models probability of the $i^{\text{th}}$ images label being $\ell$.
 
