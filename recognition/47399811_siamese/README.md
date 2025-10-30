@@ -106,7 +106,7 @@ The binary classifier has been implemented using fulling connected layers. The m
 The goal of the CNN backbone is to make the latent vectors of two images of the same label as close together while the latent vectors of two image with different labels far apart. To achieve this the ```TripletMarginLoss``` was used to evaluate the networks performance. The triplet loss works by for each anchor image $\mathcal{A}$ in a batch we randomly choose a 2 other images $\mathcal{P}$ and $\mathcal{N}$ such that the label of $\mathcal{A}$ and $\mathcal{P}$ are the same while the label of $\mathcal{N}$ differs. Then we reward the latent vector repersentation of $\mathcal{A}$ and $\mathcal{P}$ being close together and $\mathcal{A}$ and $\mathcal{N}$ being far apart. Formally the triplet loss function on a batch of size $N$ can be defined as follows,
 
 $$
-L(\mathbf{a}, \mathbf{p}, \mathbf{n}) := \max\_{i\in\{1,\ldots,N\}} \{\underbrace{\|\mathbf{a}\_i - 	\mathbf{p}\_i \|}\_{\text{distance between two images of the same label}} - \underbrace{\|\mathbf{a}\_i - \mathbf{n}\_i \|}\_{\text{distance between two images of different labels}} + \text{margin}, 0\}.
+L(\mathbf{a}, \mathbf{p}, \mathbf{n}) := \max\_{i\in[1,\ldots,N]} \left[\underbrace{\|\mathbf{a}\_i - 	\mathbf{p}\_i \|}\_{\text{distance between two images of the same label}} - \underbrace{\|\mathbf{a}\_i - \mathbf{n}\_i \|}\_{\text{distance between two images of different labels}} + \text{margin}, 0\right].
 $$
 
 where: 
@@ -187,10 +187,10 @@ The confusion matrix of the models predictions on the hidden test dataset is sho
 </div>
 
 **Analysis**:
-- Overall accuracy $=\frac{75+4116}{75+4116+766+13} = 84.3\%$.
-- Accuracy on malignant data $=\frac{75}{75+13} = 85.2\%$.
-- Accuracy on benign data $=\frac{4116}{4116+766} = 84.3\%$.
-- Therefore the model has met the accuracy requirement of around $80\%$ as it is getting higher overall and on each class (malignant and benign).
+- Overall accuracy $=\frac{75+4116}{75+4116+766+13} = 84.3$%.
+- Accuracy on malignant data $=\frac{75}{75+13} = 85.2$%.
+- Accuracy on benign data $=\frac{4116}{4116+766} = 84.3$%.
+- Therefore the model has met the accuracy requirement of around $80$% as it is getting higher overall and on each class (malignant and benign).
 - The model has a very similar accuracy on both malignant and benign models indicating the model was well balanced and the natural imbalance in the data set was successfully counter-acted.
 
 The models ROC curve is shown below:
@@ -213,7 +213,7 @@ Some sample model predictions are shown below:
 - This means the incorrect predictions might be more likely caused by the CNN backbone not being able to highlight the lesions rather than the binary classifier.
 
 ### Summary
-Overall the model was able to perform very well and hit the roughly $80\%$ requirement set. The models predictions are accuracy achieving $84.4\%$ on all test images and confident (and thus more robust) as shown by the hight $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
+Overall the model was able to perform very well and hit the roughly $80$% requirement set. The models predictions are accuracy achieving $84.4$% on all test images and confident (and thus more robust) as shown by the hight $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
 
 ## Improvements and Future Directions
 - **Add meta-data**: In the _ISIC 2020 Kaggle Challenge_ some additional meta-data was released along with the images and labels. Some meta-data includes ```sex``` and ```age_approx``` of the patient. A model which also incorporates this data into its classifications could be developed.
