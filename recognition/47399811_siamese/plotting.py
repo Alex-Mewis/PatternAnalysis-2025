@@ -24,8 +24,7 @@ catpuccin_cmap = LinearSegmentedColormap.from_list("catpuccin_cmap",
                  mocha_colours.yellow.hex, mocha_colours.rosewater.hex],
                 N=256)
 
-this_dir = os.path.dirname(os.path.abspath(__file__))
-plots_dir = os.path.join(this_dir, "plots")
+plots_dir = os.path.join(os.getcwd(), "plots")
 train_plots_dir = os.path.join(plots_dir, "train")
 
 if not os.path.exists(plots_dir): os.mkdir(plots_dir)
@@ -34,7 +33,7 @@ if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 #### DATA SHOWCASE PLOTS ###############################################################
 def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], filename: str,
                         title: str | None = None, cams: list[np.ndarray] | None = None,
-                        captions: list[str] | None = None) -> None:
+                        captions: list[tuple[str, bool]] | None = None) -> None:
     
     assert len(image_matricies) == 9
     
@@ -45,6 +44,8 @@ def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], fi
         axes[i%3, i//3].set_xticks([])
         axes[i%3, i//3].set_yticks([])
         axes[i%3, i//3].set_title("Malignant" if labels[i] else "Benign")
+        if captions is not None: axes[i%3, i//3].set_title(captions[i][0], fontsize=10,
+          color=mocha_colours.green.hex if captions[i][1] else mocha_colours.red.hex)
 
     if title is not None: fig.suptitle(title, fontsize=20)
     plt.tight_layout()
@@ -58,25 +59,40 @@ def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], fi
 
 
 #### TRAINING PLOTS ####################################################################
-def plot_loss(training_loss: list[float], validation_loss: list[float], model_title: str) -> None:
+def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
     """
     """
-    model_name = model_title.lower().replace(' ', '_')
-    outpath = os.path.join(train_plots_dir, f"{model_name}_{datetime.now().timestamp()}.png")
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4))    
 
-    epochs = list(range(1, len(training_loss)+1))   
-    plt.plot(epochs, training_loss, label="Training")
-    plt.plot(epochs, validation_loss, label="Validation")
-    plt.legend()
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss") 
-    plt.title(f"Loss of {model_title}")
-    plt.grid()
-    plt.gca().set_facecolor(mocha_colours.mantle.hex)
-   
-    plt.savefig(outpath)
-    print(f"Saved: {outpath}") 
+    epochs = range(1, 1+len(training_metrics['loss'])) 
+
+    axes[0].set_title("Classifier Traning & Validation Loss")
+    axes[0].plot(epochs, training_metrics['loss'], label='Training')
+    axes[0].plot(epochs, validation_metrics['loss'], label='Validation')
+    axes[0].set_ylabel("Loss")
+
+    axes[1].set_title("Classifier Traning & Validation Accuracy")
+    axes[1].plot(epochs, training_metrics['acc'], label='Training')
+    axes[1].plot(epochs, validation_metrics['acc'], label='Validation')
+    axes[1].set_ylabel("Accuracy")
+
+    axes[2].set_title("Classifier Traning & Validation AUC-ROC")
+    axes[2].plot(epochs, training_metrics['auc-roc'], label='Training')
+    axes[2].plot(epochs, validation_metrics['auc-roc'], label='Validation')
+    axes[2].set_ylabel("AUC-ROC")
     
+    for i in range(3):
+        axes[i].set_xlabel("Epoch")
+        axes[i].set_facecolor(mocha_colours.mantle.hex)
+        axes[i].legend()
+        axes[i].grid()
+
+    plt.tight_layout()
+
+    outpath = os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")
+    plt.savefig(outpath)
+    print(f"Saved: {outpath}")
+
     plt.close()
     return None
 
@@ -117,43 +133,6 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     plt.gca().set_facecolor(mocha_colours.mantle.hex)
     
     outpath = os.path.join(train_plots_dir, f"tsne_scatter_{dataset.lower()}_{datetime.now().timestamp()}.png")
-    plt.savefig(outpath)
-    print(f"Saved: {outpath}")
-
-    plt.close()
-    return None
-
-def plot_classifer_traning_metrics(training_metrics: dict, validation_metrics: dict) -> None:
-    """
-    """
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4))    
-
-    epochs = range(1, 1+len(training_metrics['loss'])) 
-
-    axes[0].set_title("Classifier Traning & Validation Loss")
-    axes[0].plot(epochs, training_metrics['loss'], label='Training')
-    axes[0].plot(epochs, validation_metrics['loss'], label='Validation')
-    axes[0].set_ylabel("Loss")
-
-    axes[1].set_title("Classifier Traning & Validation Accuracy")
-    axes[1].plot(epochs, training_metrics['acc'], label='Training')
-    axes[1].plot(epochs, validation_metrics['acc'], label='Validation')
-    axes[1].set_ylabel("Accuracy")
-
-    axes[2].set_title("Classifier Traning & Validation AUC-ROC")
-    axes[2].plot(epochs, training_metrics['auc-roc'], label='Training')
-    axes[2].plot(epochs, validation_metrics['auc-roc'], label='Validation')
-    axes[2].set_ylabel("AUC-ROC")
-    
-    for i in range(3):
-        axes[i].set_xlabel("Epoch")
-        axes[i].set_facecolor(mocha_colours.mantle.hex)
-        axes[i].legend()
-        axes[i].grid()
-
-    plt.tight_layout()
-
-    outpath = os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")
     plt.savefig(outpath)
     print(f"Saved: {outpath}")
 

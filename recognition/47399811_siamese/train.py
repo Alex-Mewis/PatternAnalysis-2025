@@ -1,19 +1,18 @@
 """
 contains code for traning, validating, testing and saving the model.
 """
-import os, time
+import time
 import numpy as np
 
 import torch
-from torch import nn
 from torch.nn import TripletMarginLoss, CrossEntropyLoss
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from sklearn.metrics import roc_auc_score, accuracy_score 
 
-from modules import SiameseNetwork, Classifier, save_model
-from configs import siamese_config, classifier_config
-from plotting import plot_loss, plot_tsne, plot_classifer_traning_metrics
+from modules import SiameseNetwork, save_model 
+from configs import config 
+from plotting import plot_loss, plot_tsne 
 
 #### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -27,15 +26,15 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
     triplet_loss = TripletMarginLoss().to(device)
     cross_entropy_loss = CrossEntropyLoss().to(device)
-    optimizer = torch.optim.Adam(siamese.parameters(), lr=siamese_config.learning_rate)
-    scheduler = CosineAnnealingLR(optimizer, T_max=siamese_config.epochs, eta_min=1e-7) 
+    optimizer = torch.optim.Adam(siamese.parameters(), lr=config.learning_rate)
+    scheduler = CosineAnnealingLR(optimizer, T_max=config.epochs, eta_min=1e-7) 
 
     training_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
     validation_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
 
     print("#### STARTING TRANING SIAMESE NETWORK #############################################")
     start_time = time.time()
-    for epoch in range(1, siamese_config.epochs+1):
+    for epoch in range(1, config.epochs+1):
 
         train_features = torch.empty((0, 512)).to(device)
         validation_features = torch.empty((0, 512)).to(device)
@@ -118,14 +117,17 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
         scheduler.step()
         
-        plot_classifer_traning_metrics(training_metrics, validation_metrics)
+        plot_loss(training_metrics, validation_metrics)
 
         plot_tsne(train_features, train_labels, "Train")
         plot_tsne(validation_features, validation_labels, "Validation")
 
-        save_model(siamese)
+        save_model(siamese) 
 
-        print(f"Epoch [{epoch}/{siamese_config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}") 
+        print(f"Epoch [{epoch}/{config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
+        print(f"             , Training Accuracy: {training_metrics['acc'][-1]}, Validation Accuracy: {validation_metrics['acc'][-1]}") 
+        print(f"             , Training AUC-ROC: {training_metrics['auc-roc'][-1]}, Validation AUC-ROC: {validation_metrics['AUC-ROC'][-1]}") 
+        
 
     print("#### FINISHED TRANING SIAMESE NETWORK #############################################")    
     elapsed_time = time.time() - start_time
@@ -134,115 +136,11 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
 
     return None
 
-def train_classifer(classifier: Classifier, siamese: SiameseNetwork, train_loader: DataLoader, validation_loader: DataLoader) -> None:
-
-    train_loader.dataset.set_triple_iter(False)
-    validation_loader.dataset.set_triple_iter(False)
-
-    cross_entropy_loss = CrossEntropyLoss().to(device)
-    optimizer = torch.optim.Adam(list(siamese.parameters()) + list(classifier.parameters()), lr=classifier_config.learning_rate)
-    # scheduler = CosineAnnealingLR(optimizer, T_max=classifier_config.epochs, eta_min=1e-5) 
-    
-    # siamese.eval()
-
-     
-    training_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
-    validation_metrics = {'loss': list(), 'acc': list(), 'auc-roc': list()}  
-
-    print("#### STARTED TRANING CLASSIFIER ###################################################")    
-    start_time = time.time()
-    for epoch in range(1, classifier_config.epochs+1):
-        
-        # train.
-        classifier.train()
-        siamese.train()
-        training_epoch_loss = 0
-        epoch_probs  = list()
-        epoch_preds  = list()
-        epoch_labels = list()
-        for img, label in train_loader: 
-            img, label = img.to(device), label.to(device).long()
-
-            optimizer.zero_grad()
-            
-            #with torch.no_grad():
-            latent_vector = siamese.forward_once(img)
-            
-            out = classifier(latent_vector)
-            
-            classifier_loss = cross_entropy_loss(out, label)
-
-
-            loss.backward()
-            optimizer.step()
-            
-            probs = torch.softmax(out, dim=1)[:, 1]
-            preds = torch.argmax(out, dim=1)
-
-            training_epoch_loss += loss.item()
-            epoch_probs.extend(probs.detach().cpu().numpy())
-            epoch_preds.extend(preds.detach().cpu().numpy())
-            epoch_labels.extend(label.cpu().numpy())
-
-        training_avg_loss = training_epoch_loss / len(train_loader)
-        training_metrics['loss'].append(training_avg_loss)
-        training_metrics['acc'].append(accuracy_score(epoch_labels, epoch_preds))
-        training_metrics['auc-roc'].append(roc_auc_score(epoch_labels, epoch_probs))
-
-        # validate.
-        siamese.eval()
-        classifier.eval()
-        validation_epoch_loss = 0
-        epoch_probs  = list()
-        epoch_preds  = list()
-        epoch_labels = list()
-        with torch.no_grad():
-            for img, label in validation_loader:
-                img, label = img.to(device), label.to(device).long()
-
-                latent_vector = siamese.forward_once(img)
-                out = classifier(latent_vector)
-                loss = cross_entropy_loss(out, label)
-            
-                probs = torch.softmax(out, dim=1)[:, 1]
-                preds = torch.argmax(out, dim=1)
-
-                validation_epoch_loss += loss.item()
-                epoch_probs.extend(probs.detach().cpu().numpy())
-                epoch_preds.extend(preds.detach().cpu().numpy())
-                epoch_labels.extend(label.cpu().numpy())
-
-        validation_avg_loss = validation_epoch_loss / len(validation_loader)
-        validation_metrics['loss'].append(validation_avg_loss)
-        validation_metrics['acc'].append(accuracy_score(epoch_labels, epoch_preds))
-        validation_metrics['auc-roc'].append(roc_auc_score(epoch_labels, epoch_probs))
-        
-        # scheduler.step()
-        
-        plot_classifer_traning_metrics(training_metrics, validation_metrics)
-        save_model(siamese)
-        save_model(classifier)
-
-        # for name, param in classifier.named_parameters():
-        #     if param.grad is not None:
-        #         print(name, param.grad.abs().mean().item())
-
-        print(f"Epoch [{epoch}/{classifier_config.epochs}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
-
-
-    print("#### FINISHED TRANING CLASSIFIER ##################################################")   
-    elapsed_time = time.time() - start_time
-    print(f"Traning Took: {elapsed_time:.3f}s or {(elapsed_time/60):.3f}mins")
-
-
-    return None
-
-def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
 
     test_loader.dataset.set_triple_iter(False)
 
-    siamese.eval()
-    classifier.eval()
+    model.eval()
 
     all_labels = np.zeros(len(test_loader.dataset)) 
     all_probs = np.zeros(len(test_loader.dataset))
@@ -259,9 +157,9 @@ def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: 
             imgs, labels = imgs.to(device), labels.to(device)
             batch_size = len(labels)
 
-            latent_vector = siamese.forward_once(imgs)
-            probs = classifier(latent_vector)
-            preds = torch.round(probs)
+            classifier_out = model.classify(imgs)
+            probs = torch.softmax(classifier_out, dim=1)[:, 1]
+            preds = torch.argmax(classifier_out, dim=1)
 
             all_labels[n:n+batch_size] = labels.cpu().numpy()
             all_probs[n:n+batch_size] = probs.cpu().numpy()

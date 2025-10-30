@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from pytorch_grad_cam import GradCAM
 from sklearn.metrics import roc_auc_score
 
-from modules import SiameseNetwork, Classifier, load_model
+from modules import SiameseNetwork, load_model
 from dataset import ISICImageDataset, get_train_validation_test_dataloaders
 from plotting import plot_image_showcase
 
@@ -17,10 +17,10 @@ from plotting import plot_image_showcase
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cpu': print("Warning using CPU!")
 
-def grad_cam(siamese: SiameseNetwork, images: list, labels: list):
-    target_layers = [siamese.final_convolution_layer]
+def grad_cam(model: SiameseNetwork, images: list, labels: list):
+    target_layers = [model.final_convolution_layer]
 
-    with GradCAM(model=siamese, target_layers=target_layers) as cam:
+    with GradCAM(model=model, target_layers=target_layers) as cam:
         cams = cam(images, targets=None)
     
     images = [np.transpose(img.cpu().numpy(), axes=(1,2,0)) for img in images]
@@ -31,12 +31,11 @@ def grad_cam(siamese: SiameseNetwork, images: list, labels: list):
 
     return None
 
-def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
 
     test_loader.dataset.set_triple_iter(False)
 
-    siamese.eval()
-    classifier.eval()
+    model.eval()
 
     all_labels = np.zeros(len(test_loader.dataset)) 
     all_probs = np.zeros(len(test_loader.dataset))
@@ -53,8 +52,7 @@ def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: 
             imgs, labels = imgs.to(device), labels.to(device)
             batch_size = len(labels)
 
-            latent_vector = siamese.forward_once(imgs)
-            classifier_out = classifier(latent_vector)
+            classifier_out = model.classify(imgs)
             probs = torch.softmax(classifier_out, dim=1)[:, 1]
             preds = torch.argmax(classifier_out, dim=1)
 
@@ -76,14 +74,13 @@ def test_accuracy(siamese: SiameseNetwork, classifier: Classifier, test_loader: 
 
 
 if __name__ == "__main__":
-    siamese = load_model('siamese').to(device)
-    classifer = load_model('classifier').to(device)
+    model = load_model().to(device)
 
     image_dir = './data/images/'
     labels_filepath = './data/ISIC_2020_Training_GroundTruth.csv'
 
     _, _, test_dataloader = get_train_validation_test_dataloaders()
-    test_accuracy(siamese, classifer, test_dataloader)
+    test_accuracy(model, test_dataloader)
 
     dataset = ISICImageDataset(image_dir, labels_filepath)
     dataloader = dataset.to_DataLoader(batch_size=9)
@@ -91,10 +88,9 @@ if __name__ == "__main__":
     
     for images, labels in dataloader:
         images.to(device)
-        grad_cam(siamese, images, labels.cpu().numpy())
+        grad_cam(model, images, labels.cpu().numpy())
         
-        latent_vector = siamese(images)
-        classifier_out = classifer(latent_vector)
+        classifier_out = model.classify(images)
 
         break
 
@@ -105,7 +101,10 @@ if __name__ == "__main__":
     for i in range(9):
         pred = "Malignant" if preds[i] else "Benign"
         label = "Malignant" if labels[i] else "Benign"
-        caption = f"Model: pred: {pred} with probability {(100*probs[i][preds[i]]):.1f}%\nLabel: {label}" 
-        captions.append(caption)
+        caption = f"Model: pred: {pred}\nwith probability {(100*probs[i][preds[i]]):.1f}%\nLabel: {label}" 
+        captions.append((caption, pred==label))
+      
 
-    plot_image_showcase(images, labels, 'predictions_image_showcase.png', "Image Predictions", captions=captions)
+    images = np.transpose(images.cpu().numpy(), axes=(0, 2, 3, 1))
+    images = [(img + np.abs(np.min(img)))/(np.max(img) + np.abs(np.min(img))) for img in images]
+    plot_image_showcase(images, labels, 'predictions_image_showcase', "Image Predictions", captions=captions)

@@ -10,12 +10,7 @@ class ModelConfig:
 
 BATCH_SIZE = 32
 
-siamese_config = ModelConfig(
+config = ModelConfig(
     epochs=25,
-    learning_rate=1e-3,
-)
-
-classifier_config = ModelConfig(
-    epochs=30,
-    learning_rate=1e-3,
+    learning_rate=0.01,
 )

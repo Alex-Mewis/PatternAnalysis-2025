@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
 from plotting import plot_image_showcase
-from configs import BATCH_SIZE
+from configs import BATCH_SIZE 
 
 PERCENTAGE_OF_DATA_TO_LOAD = 1.0 
 THREADS_USE = 4
@@ -26,7 +26,7 @@ TRAIN_IMAGE_TRANSFORMS = v2.Compose([
     v2.RandomRotation(10),
     v2.RandomVerticalFlip(),
     v2.RandomHorizontalFlip(),
-    v2.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
+    v2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
     v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
