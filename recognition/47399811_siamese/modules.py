@@ -6,19 +6,23 @@ from datetime import datetime
 import torch
 from torch import nn
 from torchvision import models
-from torch.optim.lr_scheduler import CosineAnnealingLR
-
 
 #### PERAMBLE #####################################################################
-
 models_dir = os.path.join(os.getcwd(), "models")
-
 if not os.path.exists(models_dir): os.mkdir(models_dir)
 
 #### NETWORKS #####################################################################
 class SiameseNetwork(nn.Module):
-
+    """
+    Contains both the CNN backbone and the binary classifier.
+    
+    CNN backbone: modified resnet18.
+    binary classifier: some fully connected layers.
+    """
     def __init__(self) -> None:
+        """
+        Initialise all modules used.
+        """
         super(SiameseNetwork, self).__init__()
 
         resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
@@ -44,18 +48,46 @@ class SiameseNetwork(nn.Module):
     
     @property
     def final_convolution_layer(self) -> nn.Module:
+        """ returns the final convolution layer in the CNN backbone. """
         return list(self._backbone.children())[-3] # skip the AvgPool2d & batchNorm2d layers
     
     def forward_once(self, x: torch.Tensor) -> torch.Tensor:
+        """ 
+        Forward the given x (images) through the CNN backbone.
+
+        Parameters:
+            x [torch.Tensor]: a tensor of images in the shape:
+                (batch_size, num_channels, height, width).
+
+        Returns:
+            [torch.Tensor] a 512 dimensional latent vector containing
+                the images features. Output shape is: (batch_size, 512). 
+        """
         out  = self._backbone(x)
         return out.view(out.size(0), -1)
     
     def classify(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Classify the images (x) by feeding in the output of the CNN into
+        the binary classifier.
+
+        Parameters:
+            x [torch.Tensor]: a tensor of images in the shape:
+                (batch_size, num_channels, height, width).
+
+        Returns:
+            [torch.Tensor]: the models confidence of each class across the batches
+                Output shape is: (batch_size, 2). 
+        """
         latent_vector = self.forward_once(x)
         return self._classififer(latent_vector)
 
     def forward(self, xs: list[torch.Tensor] | torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
+        Forwards either a list of tensors or just a single tensor.
+
+        If xs is a list of tensors then returns the element-wise forward of each tensor.
+        Otherwise, just perform a normal forward on the signal tensor. 
         """
         if isinstance(xs, list):
             return [self.forward_once(x) for x in xs]
@@ -65,16 +97,32 @@ class SiameseNetwork(nn.Module):
 
 
 #### FUNCTIONS ####################################################################
-def save_model(model: nn.Module, outdir: str | None = None) -> None:
+def save_model(model: nn.Module) -> None:
+    """
+    Saves the models state_dict to the models_dir directory.
+
+    Parameters:
+        model [nn.Module]: the model to be saved.
+    """
     filename = f"model_{datetime.now().timestamp()}.params"
     outpath = os.path.join(models_dir, filename)
     torch.save(model.state_dict(), outpath)
     print(f"Saved: {outpath}")
     return None
 
-
 def load_model(model_path: str | None = None) -> nn.Module:
+    """
+    loads the model from the previously saved models.
     
+    Parameters:
+        model_path [str]: if specified then the models state_dict
+            is taken from the given filepath otherwise the most recently
+            saved model is taken.
+
+    Returns:
+        [nn.Module]: the model which has been loaded.
+    """
+
     model = SiameseNetwork()
 
     if model_path is not None:

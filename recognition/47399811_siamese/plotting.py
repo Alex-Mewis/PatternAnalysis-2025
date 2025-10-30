@@ -1,5 +1,7 @@
 """
-Contains all of the relavent functions for making plots.
+Contains all of the relevant functions for making all plots.
+
+Made by: Alexander Mewis
 """
 import os
 from datetime import datetime
@@ -19,6 +21,7 @@ import catppuccin
 matplotlib.style.use("mocha")
 mocha_colours = catppuccin.PALETTE.mocha.colors
 
+# cmap used in the confusion matrix plot.
 catpuccin_cmap = LinearSegmentedColormap.from_list("catpuccin_cmap",
                 [mocha_colours.mauve.hex, mocha_colours.red.hex, mocha_colours.maroon.hex, mocha_colours.peach.hex, 
                  mocha_colours.yellow.hex, mocha_colours.rosewater.hex],
@@ -34,6 +37,18 @@ if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], filename: str,
                         title: str | None = None, cams: list[np.ndarray] | None = None,
                         captions: list[tuple[str, bool]] | None = None) -> None:
+    """
+    Plots a 3x3 grid layout of 9 images. Adding the approbate formatting and styling as specified.
+
+    Parameters:
+        image_matricies [list]: a list of length 9 which contains the images pixel values.
+        labels [list]: the label for each image 0 => benign and 1 => malignant.
+        filename [str]: the filename which the plot will be saved under.
+        title [str]: if not None adds this as the super title of the figure.
+        cams [list]: if not None adds this as a gray-scale overlay on top of each image.
+        captions [list]: a list of titles for each axis and text will be green if the bool 
+            if True otherwise red. 
+    """
     
     assert len(image_matricies) == 9
     
@@ -61,7 +76,16 @@ def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], fi
 #### TRAINING PLOTS ####################################################################
 def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
     """
-    """
+    Plots the loss, Accuracy and AUC-ROC of the model on both training and validation data
+    across all epochs.
+
+    Parameters:
+        training_metics: contains the models loss, accuracy and auc-roc score for all
+            epochs on the training data. 
+        validation_metrics: contains the models loss, accuracy and auc-roc score for all
+            epochs on the training data. 
+    """ 
+    
     fig, axes = plt.subplots(1, 3, figsize=(13, 4))    
 
     epochs = range(1, 1+len(training_metrics['loss'])) 
@@ -97,8 +121,15 @@ def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
     return None
 
 
-def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> None:
+def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> None: 
+    """
+    Plots the t-SNE scatter.
 
+    Parameters:
+        features [torch.Tensor]: the latent vectors of the model.
+        label [torch.Tensor]: the labels for the latent vectors of the model.
+        dataset [str]: the name of the dataset the plot is being made for.
+    """
     features, labels = features.cpu().detach().numpy(), labels.cpu().detach().numpy()
     tsne = TSNE()
     tsne_output = tsne.fit_transform(features)
@@ -143,6 +174,11 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
 #### EVALUATION PLOTS ##################################################################
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     """
+    Plots the confusion matrix from the model predictions.
+
+    Parameters:
+        predictions [np.ndarray]: the models predictions on a given dataset.
+        labels [np.ndarray]: the true labels corresponding to the model predictions.
     """
     get_num_correct   = lambda label : np.sum((predictions == labels) & (labels == label))
     get_num_incorrect = lambda label : np.sum((predictions != labels) & (labels == label)) 
@@ -164,6 +200,11 @@ def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
 
 def plot_roc_curve(probabilities: np.ndarray, labels: np.ndarray) -> None:
     """
+    Plot the ROC curve from the model probabilities.
+
+    Parameters:
+        probabilities [np.ndarray]: the model probabilities of guessing each class.
+        labels [np.ndarray]: the true labels corresponding to the probabilities.
     """
 
     fpr, tpr, _ = roc_curve(labels, probabilities)

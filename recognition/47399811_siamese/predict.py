@@ -1,8 +1,8 @@
 """
+Contains all of the functions used to evaluate and use on a trained model.
 
+Made by: Alexander Mewis
 """
-
-
 import numpy as np
 import torch
 from torch.utils.data import DataLoader 
@@ -14,10 +14,23 @@ from dataset import ISICImageDataset, get_train_validation_test_dataloaders
 from plotting import plot_image_showcase, plot_confusion_matrix, plot_roc_curve
 
 
+#### PERAMBLE #####################################################################
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cpu': print("Warning using CPU!")
 
-def grad_cam(model: SiameseNetwork, images: list, labels: list):
+
+#### FUNCTIONS ####################################################################
+def grad_cam(model: SiameseNetwork, images: list, labels: list) -> None:
+    """
+    Runs the model on a small batch of images and record the cams gradient using
+    GrandCAM. Then make an image showcase plot with the images and the GradCam
+    overlay.
+
+    Parameters:
+        model [SiameseNetwork]: the model whose grad-cam output is being made.
+        images [list]: a list of images where the model will get a grad-cam output for.
+        labels [list]: a list of true labels corresponding to the images.
+    """
     target_layers = [model.final_convolution_layer]
 
     with GradCAM(model=model, target_layers=target_layers) as cam:
@@ -31,8 +44,22 @@ def grad_cam(model: SiameseNetwork, images: list, labels: list):
 
     return None
 
-def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Tests the models accuracy on the test dataset and generates the model probabilities and
+    predictions the test dataset.
+    Prints out the following statistics on the test dataset:
+        - Accuracy
+        - AUC-ROC score
+    
+    Parameters:
+        model [SiameseNetwork]: the model whose accuarcy needs to be tested.
+        test_loader [DataLoader]: the datalaoder for the test dataset.
 
+    Returns:
+        tuple[np.ndarray, np.ndarray, np.ndarray]: (the labels of test dataset, 
+            the model probabilities fo each class guess, the model predictions for each image).
+    """
     test_loader.dataset.set_triple_iter(False)
 
     model.eval()

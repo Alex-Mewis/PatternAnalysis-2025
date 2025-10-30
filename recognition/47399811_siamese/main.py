@@ -1,5 +1,11 @@
 """
-The script which is run.
+This script can be used to run both train, testing in the same script.
+Contains useful control flow setups to allow for just training, just testing,
+loading previous models ect.
+
+The purpose of this script is to be run and it call functions from all other files.
+
+Made by: Alexander Mewis
 """
 import os
 import torch
@@ -10,27 +16,20 @@ from train import train_model
 from plotting import plot_confusion_matrix, plot_roc_curve
 from predict import test_accuracy
 
+#### PERAMBLE #####################################################################
 this_dir = os.path.dirname(os.path.abspath(__file__))
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cpu': print("Warning using CPU!")
 
-#### INPUTS ############################################################################
-## CONTROL FLOW ############################################
+#### INPUTS #######################################################################
 LOAD_MOST_RECENT_MODEL = True 
-
 TRAIN_SIAMESE = False 
 TEST_ACCURACY = True 
-
 MAKE_PREDICTION_PLOTS = True 
-
-## DATASETS ################################################D
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
 LABELS_PATH = os.path.join(this_dir, 'data', 'ISIC_2020_Training_GroundTruth.csv')
 
-## HYPERPARAMETERS #########################################D
-BATCH_SIZE = 32 
-
-
+#### MAIN #########################################################################
 def main() -> None:
 
     dataloaders = get_train_validation_test_dataloaders(IMAGE_DIR, LABELS_PATH)
