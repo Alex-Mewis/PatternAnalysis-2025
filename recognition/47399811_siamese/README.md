@@ -122,7 +122,11 @@ where $p_{i,\ell}$ is the models probability of the $i^{\text{th}}$ images label
 Finally the loss of the model is just the sum of the ```TripletMarginLoss``` to evaluate the backbone and ```CrossEntropyLoss``` to evaluate the binary classifier. We want both networks to train simultaneously and equally so they have to be combined into a single loss function.
 
 ## Training
-_The model was trained using the functions in ```train.py```. While some of the models hyperparameters are given in ```config.py```._
+_The model was trained using the functions in ```train.py```._ To train the model run the following command:
+```
+py train.py 
+```
+
 The following hyperparameters have been used to training the model:
 - ```batch_size=32```
 - ```epochs=16```
@@ -151,6 +155,11 @@ The t-SNE plot on the validation set is shown below:
 - While there is still a fair bit of overlap between the two classes this comes as a side effect of projecting the 512 dimensional latent vectors into a 2D plane. 
 
 ## Evaluation
+_The model was evaluated using the functions in ```predict.py```._ To evaluate the model run the following command:
+```
+py evaluate.py 
+```
+### Figures
 To evaluate the reasonableness of the CNN backbone it is useful to know what the model is looking at in these images to extract its features (the latent vectors). Because it could be _cheating_ by using some unintended artifact in the images not be correctly highlighting the lesions in the image. To check the models reasonableness we can look at the output of GRAD-CAM's on a random sample of images from the dataset:
 <div style="text-align: center;">
 <img src="_readme_figures/grad_cam_image_showcase.png" alt="[Base Image Plot]" width="45%"/>
@@ -161,9 +170,54 @@ To evaluate the reasonableness of the CNN backbone it is useful to know what the
 - The model, for the most part, is seen to be looking at the lesions. This is good as this should be what is used to distinguish one image as either benign or malignant.
 - While sometimes model is not able to highlight the lesions this is potentially a sign the model was over fit or insufficiently trained to perfectly pick up every mole. Either the model is not _cheating_ as it is not highlighting some obscure part of every single image.
 
+The confusion matrix of the models predictions on the hidden test dataset is shown below:
+<div style="text-align: center;">
+<img src="_readme_figures/confusion_matrix.png" alt="[Base Image Plot]" width="45%"/>
+</div>
+
+**Analysis**:
+- Overall accuracy $=\frac{75+4116}{75+4116+766+13} = 84.3\%$.
+- Accuracy on malignant data $=\frac{75}{75+13} = 85.2\%$.
+- Accuracy on benign data $=\frac{4116}{4116+766} = 84.3\%$.
+- Therefore the model has met the accuracy requirement of around $80\%$ as it is getting higher overall and on each class (malignant and benign).
+- The model has a very similar accuracy on both malignant and benign models indicating the model was well balanced and the natural imbalance in the data set was successfully counter-acted.
+
+The models ROC curve is shown below:
+<div style="text-align: center;">
+<img src="_readme_figures/roc_curve.png" alt="[Base Image Plot]" width="45%"/>
+</div>
+
+**Analysis**:
+- The AUC-ROC score measures teh model flexibility under various thresholds for its predictions. So the higher the AUC-ROC (with a max of 1) the more confident your model is in its predictions. 
+- $AUC= 0.91$ shows the model has a high level of confidence on its predictions on the test data. Which is what we want because the models predictions will be more stable on unknown data.
+
+Some sample model predictions are shown below:
+<div style="text-align: center;">
+<img src="_readme_figures/predictions_image_showcase.png" alt="[Base Image Plot]" width="45%"/>
+</div>
+
+**Analysis**:
+- Showcases example images of true positive, false positive, true negative and false negative.
+- It can be seen that when the GRAD-CAM what not able to correctly highlight the lesions this is what lead to the model having worse predictions.
+- This means the incorrect predictions might be more likely caused by the CNN backbone not being able to highlight the lesions rather than the binary classifier.
+
+### Summary
+Overall the model was able to perform very well and hit the roughly $80\%$ requirement set. The models predictions are accuracy achieving $84.4\%$ on all test images and confident (and thus more robust) as shown by the hight $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
 
 ## Improvements and Future Directions
+- **Add meta-data**: In the _ISIC 2020 Kaggle Challenge_ some additional meta-data was released along with the images and labels. Some meta-data includes ```sex``` and ```age_approx``` of the patient. A model which also incorporates this data into its classifications could be developed.
+- **Using other backbone CNN's**: for this project ```restnet18``` was the only CNN tested. However, some other CNNs could be used for the backbone which could lead to better results. Other CNN's could also help to resolve the issue with the current solution not being able to pickout the lesion for some images.
+- **SMOTE**: SMOTE is another technique which could be used to counteract the class imbalance in the dataset by creating new fabricated images instead of just oversampling the same image. This could lead to stronger generalisation on the whole dataset as it is not seeing the exact same image as much.
+- **Data Augmentations:** Other data augmentations could be used to help with generalisation and reduce over fitting in the model. Due to the time limit of this project there was not enough time to get fine-tune and get more consistent results with more complex augmentations. Adding more augmentations would also help counteract the class imbalance.
+
+
 
 ## References
-https://www.researchgate.net/figure/Original-ResNet-18-Architecture_fig1_336642248
+- https://www.kaggle.com/datasets/nischaydnk/isic-2020-jpg-256x256-resized/data
+- https://www.researchgate.net/figure/Original-ResNet-18-Architecture_fig1_336642248
+- https://github.com/jacobgil/pytorch-grad-cam
+- https://pytorch.org/
+- https://medium.com/analytics-vidhya/a-friendly-introduction-to-siamese-networks-283f31bf38cd
+- https://catppuccin.com/
+- https://www.geeksforgeeks.org/machine-learning/auc-roc-curve/
 
