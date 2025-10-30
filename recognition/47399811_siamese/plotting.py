@@ -66,17 +66,17 @@ def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
 
     epochs = range(1, 1+len(training_metrics['loss'])) 
 
-    axes[0].set_title("Classifier Traning & Validation Loss")
+    axes[0].set_title("Traning & Validation Loss")
     axes[0].plot(epochs, training_metrics['loss'], label='Training')
     axes[0].plot(epochs, validation_metrics['loss'], label='Validation')
     axes[0].set_ylabel("Loss")
 
-    axes[1].set_title("Classifier Traning & Validation Accuracy")
+    axes[1].set_title("Traning & Validation Accuracy")
     axes[1].plot(epochs, training_metrics['acc'], label='Training')
     axes[1].plot(epochs, validation_metrics['acc'], label='Validation')
     axes[1].set_ylabel("Accuracy")
 
-    axes[2].set_title("Classifier Traning & Validation AUC-ROC")
+    axes[2].set_title("Traning & Validation AUC-ROC")
     axes[2].plot(epochs, training_metrics['auc-roc'], label='Training')
     axes[2].plot(epochs, validation_metrics['auc-roc'], label='Validation')
     axes[2].set_ylabel("AUC-ROC")
@@ -89,7 +89,7 @@ def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
 
     plt.tight_layout()
 
-    outpath = os.path.join(train_plots_dir, f"classifier_{datetime.now().timestamp()}.png")
+    outpath = os.path.join(train_plots_dir, f"model_{datetime.now().timestamp()}.png")
     plt.savefig(outpath)
     print(f"Saved: {outpath}")
 
