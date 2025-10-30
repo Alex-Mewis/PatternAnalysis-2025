@@ -13,8 +13,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 
 from plotting import plot_image_showcase
-from configs import BATCH_SIZE 
 
+BATCH_SIZE = 32
 PERCENTAGE_OF_DATA_TO_LOAD = 1.0 
 THREADS_USE = 4
 
