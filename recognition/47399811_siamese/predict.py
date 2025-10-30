@@ -1,5 +1,5 @@
 """
-Contains all of the functions used to evaluate and use on a trained model.
+Contains all of the functions used to evaluate and use/predict with the trained model.
 
 Made by: Alexander Mewis
 """

@@ -1,5 +1,6 @@
 """
-Contains the data loader for loading and preprocesing the data.
+Contains the methods to load the ISIC image dataset and the dataloaders to batch it.
+Contains all transformations/preprocessing for the dataset.
 
 Made by: Alexander Mewis
 """
@@ -23,7 +24,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #### CONFIGURABLES ################################################################
 BATCH_SIZE = 32
 PERCENTAGE_OF_DATA_TO_LOAD = 1.0 
-THREADS_USE = 4
+THREADS_USE = 4 # number of threads to use when reading in images.
 
 TRAIN_IMAGE_TRANSFORMS = v2.Compose([
     v2.RandomRotation(10),

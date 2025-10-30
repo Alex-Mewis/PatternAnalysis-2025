@@ -1,5 +1,8 @@
 """
 contains the components of the siamese model.
+Also has helpful functions for saving and loaded the model.
+
+Made by: Alexander Mewis
 """
 import os
 from datetime import datetime
