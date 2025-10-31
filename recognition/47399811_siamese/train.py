@@ -92,17 +92,18 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
             probs = torch.softmax(classifier_out, dim=1)[:, 1]
             preds = torch.argmax(classifier_out, dim=1)
 
-            loss = siamese_loss + classifier_loss
+            loss = siamese_loss + classifier_loss # models loss.
+            training_epoch_loss += loss.item()
 
             loss.backward()
             optimizer.step()    
 
-            training_epoch_loss += loss.item()
             epoch_probs.extend(probs.detach().cpu().numpy())
             epoch_preds.extend(preds.detach().cpu().numpy())
             epoch_labels.extend(label.cpu().numpy())
 
             if epoch == EPOCHS:
+                # keep the outputs for the t-SNE plot.
                 train_features = torch.cat([train_features, anchor_features])
                 train_labels = torch.cat([train_labels, label])
 
@@ -131,7 +132,7 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
                 probs = torch.softmax(classifier_out, dim=1)[:, 1]
                 preds = torch.argmax(classifier_out, dim=1)
 
-                loss = siamese_loss + classifier_loss
+                loss = siamese_loss + classifier_loss # models loss
                 validation_epoch_loss += loss.item() 
 
                 epoch_probs.extend(probs.detach().cpu().numpy())
@@ -139,6 +140,7 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
                 epoch_labels.extend(label.cpu().numpy())
                 
                 if epoch == EPOCHS:
+                    # keep the outputs for the t-SNE plot.
                     validation_features = torch.cat([validation_features, anchor_features])
                     validation_labels = torch.cat([validation_labels, label])
 
@@ -149,7 +151,8 @@ def train_model(siamese: SiameseNetwork, train_loader: DataLoader, validation_lo
         validation_metrics['auc-roc'].append(roc_auc_score(epoch_labels, epoch_probs))
 
         scheduler.step()
-        
+
+        # print out results for this epoch 
         print(f"Epoch [{epoch}/{EPOCHS}], Training Loss: {training_avg_loss:.5f}, Validation Loss: {validation_avg_loss:.5f}")
         print(f"             , Training Accuracy: {training_metrics['acc'][-1]}, Validation Accuracy: {validation_metrics['acc'][-1]}") 
         print(f"             , Training AUC-ROC: {training_metrics['auc-roc'][-1]}, Validation AUC-ROC: {validation_metrics['auc-roc'][-1]}") 

@@ -37,7 +37,7 @@ def grad_cam(model: SiameseNetwork, images: list, labels: list) -> None:
         cams = cam(images, targets=None)
     
     images = [np.transpose(img.cpu().numpy(), axes=(1,2,0)) for img in images]
-    # conver images to be in the range of 0 to 1
+    # convert images to be in the range of 0 to 1
     images = [(img + np.abs(np.min(img)))/(np.max(img) + np.abs(np.min(img))) for img in images]
 
     plot_image_showcase(images, labels, "grad_cam_image_showcase", "GRAD-CAM Images", cams)
@@ -68,7 +68,7 @@ def test_accuracy(model: SiameseNetwork, test_loader: DataLoader) -> tuple[np.nd
     all_probs = np.zeros(len(test_loader.dataset))
     all_preds = np.zeros(len(test_loader.dataset))
     
-    n = 0
+    n = 0 # number of image already seen.
 
     print("#### STARTED TESTING ACCURACY #####################################################")  
     with torch.no_grad():

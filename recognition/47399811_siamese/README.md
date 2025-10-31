@@ -1,6 +1,6 @@
 # Siamese Network to Classify Melanoma on Lesions (ISIC 2020)
 ## Project Description
-For this project a Siamese model on the _ISIC 2020 Challenge dataset_  which aims to classify lesions as either benign or malignant was developed. The goal of the model is to achieve an accuracy of around 80% on the test dataset. The developed model will help dermatologists, who currently have to look through the lesions one by one, find early signs of skin cancer and assist with diagnosis.
+For this project a Siamese model trained on the _ISIC 2020 Challenge dataset_  which aims to classify lesions as either benign or malignant was developed. The goal of the model is to achieve an accuracy of around 80% on the test dataset. The developed model will help dermatologists, who currently have to look through the lesions one by one, find early signs of skin cancer and assist with diagnosis.
 
 
 ## Dataset Description
@@ -91,7 +91,7 @@ py modules.py
 ```
 
 ### Networks
-The siamese network ```SiameseNetwork``` consists of a convolution neural network (CNN) backbone and a simple binary classifier. The CNN backbone takes in the images and produces some latent vector output. Then the binary classifier uses this latent vector output to classify the image. The latent vector is just some compact representation of the image which highlights/extracts the important features of the image which will be used for classification.
+The siamese network ```SiameseNetwork``` consists of a convolution neural network (CNN) backbone and a simple binary classifier. The CNN backbone takes in the images, as inputs, and produces some latent vector output. Then the binary classifier uses this latent vector output to classify the image. The latent vector is just some compact representation of the image which highlights/extracts the important features of the image which will be used for classification.
 
 For this project a slightly modified ```restnet18``` was used for the CNN backbone of the siamese network. The ```resnet18```'s architecture is shown below:
 
@@ -102,9 +102,9 @@ For this project a slightly modified ```restnet18``` was used for the CNN backbo
 </div>
 
 
-For this project the last fully connected layer and softmax have been removed, as only the CNN part of the model is needed. As can be seen above this model will output a 512 dimensional latent vector representation of an image.
+The last fully connected layer and softmax have been removed for the backbone, as only the CNN part of the model is needed. As can be seen above this model will output a 512 dimensional latent vector representation of an image.
 
-The binary classifier consists of 4 fully connected layers of size: $512 \to 256 \to 128 \to 64 \to 2$ with a ```RelU``` activation function and ```Dropout(0.5)``` between each fully connected layer. The final layer output has two values; the first being the models confidence that the image is benign (```label==0```) and the second is the models confidence the image is malignant (```label==1```). The models confidence in each label are used to generate its predictions. The dropout layers in the classifier help to reduce over fitting in the model by randomly turning off 50% of the nodes in each layer.
+The binary classifier consists of 4 fully connected layers of size: $512 \to 256 \to 128 \to 64 \to 2$ with a ```ReLU``` activation function and ```Dropout(0.5)``` between each fully connected layer. The final layer output has two values; the first being the models confidence that the image is benign (```label==0```) and the second is the models confidence the image is malignant (```label==1```). The models confidence in each label are used to generate its predictions. The dropout layers in the classifier help to reduce over fitting in the model by randomly turning off 50% of the nodes in each layer.
 
 ### Loss Functions
 The goal of the CNN backbone is to make the latent vectors of two images of the same label close together and the latent vectors of two image with different labels far apart. To achieve this the ```TripletMarginLoss``` was used to evaluate the CNN's performance. The triplet loss works by randomly choosing 2 other images $\mathcal{P}$ and $\mathcal{N}$ for each anchor image $\mathcal{A}$ such that the label of $\mathcal{A}$ and $\mathcal{P}$ are the same while the label of $\mathcal{N}$ differs. Then the loss rewards the latent vectors for $\mathcal{A}$ and $\mathcal{P}$ being close together and $\mathcal{A}$ and $\mathcal{N}$ being far apart. Formally the triplet loss function on a batch of size $M$ can be defined as follows,
@@ -129,7 +129,7 @@ $$
 Then using these probabilities we define Cross Entropy Loss ($\text{CE}$) on a batch of size $M$ for true labels $\mathbf{y} = (y\_1, \ldots, y\_M)$ as,
 
 $$
-CE = -\frac{1}{M}\sum\_{i=1}^M \left[y\_i\cdot \log(p\_{i,0}) +  (1-y\_i)\log(p\_{i,1}) \right],
+CE = -\frac{1}{M}\sum\_{i=1}^M \left[y\_i\cdot \log(p\_{i,0}) +  (1-y\_i)\cdot\log(p\_{i,1}) \right],
 $$
 
 where $p\_{i,\ell}$ is the models probability of the $i^{\text{th}}$ images label being $\ell$.
@@ -167,7 +167,7 @@ The t-SNE plot on the validation set is shown below:
 </div>
 
 **Analysis**:
-- Some good separation can be seen between the two classes, as a most of the malignant images are pooled together at the end of the shape (to the right). While the benign images are mostly all grouped together in the large blob on the left end.
+- Some good separation can be seen between the two classes, as most of the malignant images are pooled together at the end of the shape (to the right). While the benign images are mostly all grouped together in the large blob on the left end.
 - While there is still a fair bit of overlap between the two classes this comes as a side effect of projecting the 512 dimensional latent vectors into a 2D plane. 
 
 ## Evaluation
@@ -176,7 +176,7 @@ _The model was evaluated using the functions in ```predict.py```._ To evaluate t
 py evaluate.py 
 ```
 ### Figures
-To evaluate the reasonableness of the CNN backbone it is useful to know what the model is looking at in these images to extract its features (the latent vectors). Because it could be _cheating_ by using some unintended artifact in the images or not correctly highlighting the lesions in the image. To check the models reasonableness we can look at the output of GRAD-CAM on a random sample of images from the dataset:
+To evaluate the reasonableness of the CNN backbone it is useful to know what the model is looking at in the images to extract its features (the latent vectors). Because it could be _cheating_ by using some unintended artifact in the images or not correctly highlighting the lesions in the image. To check the models reasonableness we can look at the output of GRAD-CAM on a random sample of images from the dataset:
 <div style="text-align: center;">
 <img src="_readme_figures/grad_cam_image_showcase.png" alt="[Base Image Plot]" width="45%"/>
 </div>
@@ -184,7 +184,7 @@ To evaluate the reasonableness of the CNN backbone it is useful to know what the
 **Analysis**:
 - The areas in the image where the overlay is brightest are where the CNN is looking at the most when extracting its features.
 - The model, for the most part, is seen to be looking at the lesions. This is good as this should be what is used to distinguish one image as either benign or malignant.
-- While sometimes model is not able to highlight the lesions this is potentially a sign the model was overfit, insufficiently trained or too simple to pick up on every lesion. 
+- While sometimes model is not able to highlight the lesions this is potentially a sign the model was overfit, insufficiently trained or too simple to generalise a pattern for all lesions.
 - Clearly the model is not _cheating_ as it is not highlighting some obscure part of every single image.
 
 The confusion matrix of the models predictions on the hidden test dataset is shown below:
@@ -197,7 +197,7 @@ The confusion matrix of the models predictions on the hidden test dataset is sho
 - Accuracy on malignant data $=\frac{75}{75+13} = 85.2$%.
 - Accuracy on benign data $=\frac{4116}{4116+766} = 84.3$%.
 - Therefore the model has met the accuracy requirement of around $80$% as it is getting higher than $80$% overall and on each class.
-- The model has a very similar accuracy on both malignant and benign images indicating the model was well balanced and the natural imbalance in the data set was successfully counter acted.
+- The model has a very similar accuracy on both malignant and benign images indicating the model is well balanced and the natural imbalance in the data set was successfully counter acted.
 
 The models ROC curve on the hidden test dataset is shown below:
 <div style="text-align: center;">
@@ -219,7 +219,7 @@ Some sample model predictions are shown below:
 - This means the incorrect predictions might be more likely caused by the CNN backbone not being able to highlight the lesions rather than the binary classifier.
 
 ### Summary
-Overall the model was able to perform very well and hit the roughly $80$% requirement set on the test data. The models predictions are accurate on the test data, having a $84.4$% accuracy, and is very confident/robust as shown by the high $AUC$ value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
+Overall the model was able to perform very well and hit the roughly $80$% requirement set on the test data. The models predictions are accurate on the test data, having a $84.4$% accuracy, and very confident/robust as shown by the high AUC-ROC value of $0.91$. However, a few issues were observed with the CNN backbone not being able to highlight the lesion on some images (as seen in the GRAD-CAM images) which often lead to an incorrect prediction (as seen in the image predictions).
 
 ## Improvements and Future Directions
 - **Add meta-data**: In the _ISIC 2020 Kaggle Challenge_ some additional meta-data was released along with the images and labels. These include the ```sex``` and ```age_approx``` of the patient. A model which also incorporates this meta-data into its classifications could be developed.

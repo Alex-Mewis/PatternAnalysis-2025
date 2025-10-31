@@ -33,7 +33,7 @@ train_plots_dir = os.path.join(plots_dir, "train")
 if not os.path.exists(plots_dir): os.mkdir(plots_dir)
 if not os.path.exists(train_plots_dir): os.mkdir(train_plots_dir)
 
-#### DATA SHOWCASE PLOTS ###############################################################
+#### DATA SHOWCASE PLOTS ##########################################################
 def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], filename: str,
                         title: str | None = None, cams: list[np.ndarray] | None = None,
                         captions: list[tuple[str, bool]] | None = None) -> None:
@@ -73,7 +73,7 @@ def plot_image_showcase(image_matricies: list[np.ndarray], labels: list[int], fi
     return None
 
 
-#### TRAINING PLOTS ####################################################################
+#### TRAINING PLOTS ###############################################################
 def plot_loss(training_metrics: dict, validation_metrics: dict) -> None:
     """
     Plots the loss, Accuracy and AUC-ROC of the model on both training and validation data
@@ -137,7 +137,7 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     benign_tsne = tsne_output[labels == 0, :]
     malignant_tsne = tsne_output[labels == 1, :]
 
-    plt.scatter(
+    plt.scatter( # plot the Benign scatter points.
         benign_tsne[:,0],
         benign_tsne[:,1],
         label="Benign",
@@ -146,7 +146,7 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
         alpha=0.5,
     )
 
-    plt.scatter(
+    plt.scatter( # plots teh Malignant scatter points.
         x=malignant_tsne[:,0],
         y=malignant_tsne[:,1],
         label="Malignant",
@@ -171,7 +171,7 @@ def plot_tsne(features: torch.Tensor, labels: torch.Tensor, dataset: str) -> Non
     return None
 
 
-#### EVALUATION PLOTS ##################################################################
+#### EVALUATION PLOTS #############################################################
 def plot_confusion_matrix(predictions: np.ndarray, labels: np.ndarray) -> None:
     """
     Plots the confusion matrix from the model predictions.
@@ -224,5 +224,4 @@ def plot_roc_curve(probabilities: np.ndarray, labels: np.ndarray) -> None:
     
     print(f"Saved {outpath}")
     plt.close()
-
     return None

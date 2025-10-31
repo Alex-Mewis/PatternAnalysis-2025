@@ -133,7 +133,8 @@ def load_model(model_path: str | None = None) -> nn.Module:
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict) 
         return model
-    
+
+    # otherwise we fetch the most recent model file in the models_dir. 
     latest_model_datetime = None
     latest_model_path = None
     for model_filename in os.listdir(models_dir):
@@ -146,6 +147,7 @@ def load_model(model_path: str | None = None) -> nn.Module:
             latest_model_path = os.path.join(models_dir, model_filename)
 
     if latest_model_path is None:
+        # then no models have been saved to the models_dir
         print(f"Warning there were no previous models which could be loaded.")
         print("So just staring from a new model.")
         return model

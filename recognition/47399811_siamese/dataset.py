@@ -116,6 +116,7 @@ def load_image(args: list[int, str, list[str], pd.DataFrame, list[str], list[int
     
     image_filepaths[i] = image_filepath 
 
+    # find the label for the image in the labels dir
     image_name = os.path.basename(image_filepath).replace('.jpg', '')        
     label = labels_df.loc[labels_df['image_name'] == image_name, 'target'].iloc[0]
     labels[i] = label
@@ -185,6 +186,7 @@ class ISICImageDataset(Dataset):
         # number of images to load.
         n = int(len(os.listdir(image_dir)) * PERCENTAGE_OF_DATA_TO_LOAD)
         
+        # get the aggument to run load image (multi-threaded).
         labels_df = pd.read_csv(labels_path)
         labels = np.zeros(n)
         loading_args = [None] * n 
@@ -198,6 +200,7 @@ class ISICImageDataset(Dataset):
 
         launch_progress_bar(number_of_images_loaded, n)
         
+        # fetch all of the images into the image_filepaths and labels to the labels array.
         with ThreadPoolExecutor(max_workers=THREADS_USE) as thread_executer:
             for args in loading_args:
                 thread_executer.submit(load_image, args)
@@ -213,7 +216,6 @@ class ISICImageDataset(Dataset):
         
         random.shuffle(self._negative_images)
         random.shuffle(self._positive_images)
-        
         
         return None
     
@@ -237,13 +239,14 @@ class ISICImageDataset(Dataset):
         50% split between the two classes. This is done by extending the positive
         images with repeating values and the shuffling at the end.
         """
-        # increase the positive images to be the same size as the negative
         n = len(self._positive_images)
         pos_i = 0
         for i in range(len(self._positive_images), len(self._negative_images)):
             self._positive_images.append(self._positive_images[pos_i])
             pos_i = pos_i + 1 if pos_i != n - 1 else 0
 
+        # shuffle the images again so they are not in direct cycles of the original
+        # positive images.
         random.shuffle(self._positive_images)
 
         return None
@@ -306,6 +309,7 @@ class ISICImageDataset(Dataset):
         image = self.__fetch_image_data(filepath)
 
         if not self._triple_iter:
+            # then there is no need to find a positive and negative image.
             return image, label
 
         positive_image = self.__find_random_pair(i, label, filepath)
@@ -337,14 +341,13 @@ class ISICImageDataset(Dataset):
             tuple[ISICImageDataset, ISICImageDataset]: the two split datasets.
         """
 
-        n_pos = int(p*len(self._positive_images))
-        n_neg = int(p*len(self._negative_images))
+        n_pos = int(p*len(self._positive_images)) # number of positive images in first dataset.
+        n_neg = int(p*len(self._negative_images)) # number of negative images in first dataset.
 
         train_positive_filepaths = self._positive_images[:n_pos]
         test_positive_filepaths = self._positive_images[n_pos:]
         train_negative_filepaths = self._negative_images[:n_neg]
         test_negative_filepaths = self._negative_images[n_neg:]
-
 
         train_dataset = ISICImageDataset(None, None, train_positive_filepaths, train_negative_filepaths)
         test_dataset = ISICImageDataset(None, None, test_positive_filepaths, test_negative_filepaths)
@@ -381,7 +384,8 @@ def get_train_validation_test_dataloaders(images_dir: str | None = None, labels_
     train_dataset, hidden_dataset = dataset.split(p=0.7)   
     validation_dataset, test_dataset = hidden_dataset.split(p=0.5)
     
-    train_dataset.force_even_data()
+    # apply training augmentations to the data
+    train_dataset.force_even_data() # we force even after splitting to ensure there is no data leakage.
     train_dataset.set_training_data_transforms()
     
     train_dataloader = train_dataset.to_DataLoader(batch_size=BATCH_SIZE)
@@ -395,8 +399,9 @@ if __name__ == "__main__":
     image_dir = './data/images/'
     labels_filepath = './data/ISIC_2020_Training_GroundTruth.csv'
 
-    get_data_stats(labels_filepath)
+    get_data_stats(labels_filepath) # print out the dataset statistics.
 
+    # load in the dataset and plot 9 random images as a showcase on a grid layout
     dataset = ISICImageDataset(image_dir, labels_filepath)
     dataset.set_transforms(v2.Compose(VALIDATION_TRANSFORMS.transforms[:-1])) # remove normalisation
     dataset.set_triple_iter(False)
@@ -409,6 +414,7 @@ if __name__ == "__main__":
     
     plot_image_showcase(images, labels, 'base_images_showcase', "Base Images")
 
+    # not plot the same image showcase but with the training augmentations applied.
     dataloader.dataset.set_transforms(v2.Compose(TRAIN_IMAGE_TRANSFORMS.transforms[:-1])) # remove normalisation
 
     for images, labels in dataloader:

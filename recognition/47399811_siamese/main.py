@@ -22,8 +22,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cpu': print("Warning using CPU!")
 
 #### INPUTS #######################################################################
-LOAD_MOST_RECENT_MODEL = True 
-TRAIN_SIAMESE = False 
+LOAD_MOST_RECENT_MODEL = False 
+TRAIN_SIAMESE = True 
 TEST_ACCURACY = True 
 MAKE_PREDICTION_PLOTS = True 
 IMAGE_DIR = os.path.join(this_dir, 'data', 'images')
@@ -32,17 +32,17 @@ LABELS_PATH = os.path.join(this_dir, 'data', 'ISIC_2020_Training_GroundTruth.csv
 #### MAIN #########################################################################
 def main() -> None:
 
+    # load in the data loader.
     dataloaders = get_train_validation_test_dataloaders(IMAGE_DIR, LABELS_PATH)
     train_dataloader, validation_dataloader, test_dataloader = dataloaders 
-    
+
+    # load in the model 
     siamese = SiameseNetwork() if not LOAD_MOST_RECENT_MODEL else load_model()
-    
     siamese = siamese.to(device)
 
     if TRAIN_SIAMESE: 
         train_model(siamese, train_dataloader, validation_dataloader) 
         save_model(siamese)
-
 
     if TEST_ACCURACY:
        labels, probabilities, predictions = test_accuracy(siamese, test_dataloader)
