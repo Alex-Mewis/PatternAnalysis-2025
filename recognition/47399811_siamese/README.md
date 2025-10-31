@@ -11,8 +11,8 @@ The dataset is hosted [here](https://www.kaggle.com/competitions/siim-isic-melan
   * 584 images are malignant (1.8% of all images)
 - CSV file:
   * headers: ```image_name```, ```patient_id```, ```sex```, ```age_approx```, ```anatom_site_general_challenge```, ```diagnosis```, ```benign_malignant```, ```target```.
-  * all of the meta data will be ignored in this project as we are only interested in classifying based on the images.
-  * the ```target``` column is what we wish to predict
+  * all of the meta data will be ignored in this project as out model can only in classify based on the images.
+  * the ```target``` column is to predicted (the target value).
     * ```target == 0``` means the lesion is benign (harmless).
     * ```target == 1``` means the lesion is malignant (harmful).
 
@@ -118,15 +118,15 @@ where:
 - $\mathbf{p} := (\mathbf{p}\_1, \ldots, 	\mathbf{p}\_M)$ where $\mathbf{p}\_i$ is the latent vector output of the CNN on a chosen _positive_ image which has the same label as $\mathbf{a}\_i$.
 - $\mathbf{n} := (\mathbf{n}\_1, \ldots, 	\mathbf{n}\_M)$ where $\mathbf{n}\_i$ is the latent vector output of the CNN on a chosen _negative_ image which has a different label than $\mathbf{a}\_i$.
 
-For this project we have also chosen $\text{margin} = 1$ (which is a common choice).
+Note $\text{margin} = 1$ was chosen (which is a common choice).
 
-The goal of the binary classifier is to correctly classify the images from their latent vectors as either benign or malignant. So to achieve this ```CrossEntropyLoss``` is used, cross entropy loss measures how close the models probability distribution for the labels is to the true labels. To define the Cross Entropy Loss we must first define the models probability distribution from its confidence output in the final layer of the classifier. This can be achieved using the $\text{softmax}$ function, that is, if we let $(c\_0, c\_1)$ be the classifiers output (the models confidence in benign and malignant respectfully) then we can define the classifiers probability of the image being benign $p\_0$ or malignant $p\_1$ as follows:
+The goal of the binary classifier is to correctly classify the images from their latent vectors as either benign or malignant. So to achieve this ```CrossEntropyLoss``` is used, cross entropy loss measures how close the models probability distribution for the labels is to the true labels. To define the Cross Entropy Loss the models probability distribution from its confidence output in the final layer of the classifier must be defined. This can be achieved using the $\text{softmax}$ function, that is, consider $(c\_0, c\_1)$ to be the classifiers output (the models confidence in benign and malignant respectfully) classifiers probability of the image being benign $p\_0$ or malignant $p\_1$ can be defined as follows:
 
 $$
 p\_0:=\text{softmax}(c\_0) = \frac{e^{c\_0}}{e^{c\_0}+e^{c\_1}}, \hspace{1cm} p\_1 := \text{softmax}(c\_1) = \frac{e^{c\_1}}{e^{c\_0} + e^{c\_1}}.
 $$
 
-Then using these probabilities we define Cross Entropy Loss ($\text{CE}$) on a batch of size $M$ for true labels $\mathbf{y} = (y\_1, \ldots, y\_M)$ as,
+Then using these probabilities the Cross Entropy Loss ($\text{CE}$) on a batch of size $M$ for true labels $\mathbf{y} = (y\_1, \ldots, y\_M)$ can be given as,
 
 $$
 CE = -\frac{1}{M}\sum\_{i=1}^M \left[y\_i\cdot \log(p\_{i,0}) +  (1-y\_i)\cdot\log(p\_{i,1}) \right],
@@ -134,7 +134,7 @@ $$
 
 where $p\_{i,\ell}$ is the models probability of the $i^{\text{th}}$ images label being $\ell$.
 
-Finally the loss of the model is just the sum of the ```TripletMarginLoss``` to evaluate the backbone and ```CrossEntropyLoss``` to evaluate the binary classifier. We want both networks to train simultaneously and equally so they have to be combined into a single loss function.
+Finally the loss of the model is just the sum of the ```TripletMarginLoss``` to evaluate the backbone and ```CrossEntropyLoss``` to evaluate the binary classifier. Since networks need to train simultaneously and equally the individual losses have to be combined into a single loss function.
 
 ## Training
 _The model was trained using functions in ```train.py```._ To train the model run the following command:
@@ -176,7 +176,7 @@ _The model was evaluated using the functions in ```predict.py```._ To evaluate t
 py evaluate.py 
 ```
 ### Figures
-To evaluate the reasonableness of the CNN backbone it is useful to know what the model is looking at in the images to extract its features (the latent vectors). Because it could be _cheating_ by using some unintended artifact in the images or not correctly highlighting the lesions in the image. To check the models reasonableness we can look at the output of GRAD-CAM on a random sample of images from the dataset:
+To evaluate the reasonableness of the CNN backbone it is useful to know what the model is looking at in the images to extract its features (the latent vectors). Because it could be _cheating_ by using some unintended artifact in the images or not correctly highlighting the lesions in the image. To check the models reasonableness the output of GRAD-CAM on a random sample of images from the dataset can be considered below:
 <div style="text-align: center;">
 <img src="_readme_figures/grad_cam_image_showcase.png" alt="[Base Image Plot]" width="45%"/>
 </div>
@@ -206,7 +206,7 @@ The models ROC curve on the hidden test dataset is shown below:
 
 **Analysis**:
 - The AUC-ROC score measures the models flexibility under various thresholds for its predictions. So the higher the AUC-ROC (with a max of 1) the more confident your model is in its predictions. 
-- $AUC= 0.91$ shows the model has a high level of confidence on its predictions on the test data. Which is what we want because the models predictions will then likely be more stable and robust on unknown data.
+- $AUC= 0.91$ shows the model has a high level of confidence on its predictions on the test data. Which is is desired because the models predictions will then likely be more stable and robust on unknown data.
 
 Some sample model predictions are shown below:
 <div style="text-align: center;">
